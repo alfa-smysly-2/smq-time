@@ -1,0 +1,1591 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SMQ TIME</title>
+<style>
+:root {
+  --ink: #111;
+  --mut: #767676;
+  --line: #E8E8E8;
+  --warm: #FAFAF8;
+  --tile: #F4F3EF;
+  --ok: #1F7A4D;
+  --err: #B3261E;
+  --pad: 40px;
+  --hh: 64px;
+  --sat: env(safe-area-inset-top, 0px);
+  --t: 200ms ease;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font: 400 14px/1.5 "Helvetica Neue", Helvetica, "Neue Haas Grotesk Text Pro", Arial, sans-serif;
+  color: var(--ink);
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+body.lock { overflow: hidden; }
+a { color: inherit; text-decoration: none; }
+button, input, select { font: inherit; color: inherit; }
+button { background: none; border: 0; cursor: pointer; }
+img { display: block; width: 100%; height: 100%; object-fit: contain; }
+h1, h2, h3, h4, h5 { font-weight: 400; }
+ul { list-style: none; }
+.muted { color: var(--mut); }
+.over { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
+
+.ico svg, .tabbar svg, .search-bar > svg, .fav svg {
+  width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* header */
+.hdr {
+  position: sticky; top: var(--sat); z-index: 50; height: var(--hh);
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  padding: 0 var(--pad); background: #fff; border-bottom: 1px solid var(--line);
+}
+.logo { font-size: 15px; font-weight: 500; letter-spacing: .32em; white-space: nowrap; }
+.nav { display: flex; gap: 36px; }
+.nav a { position: relative; padding: 8px 0; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+.nav a::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 2px; height: 1px; background: var(--ink);
+  transform: scaleX(0); transform-origin: left; transition: transform var(--t);
+}
+.nav a:hover::after, .nav a.on::after { transform: scaleX(1); }
+.tools { display: flex; gap: 4px; justify-content: flex-end; margin-right: -10px; }
+.ico { position: relative; width: 40px; height: 40px; display: grid; place-items: center; }
+.cnt {
+  position: absolute; top: 4px; right: 2px; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px;
+  background: var(--ink); color: #fff; font: 500 9px/15px Helvetica, Arial, sans-serif; text-align: center;
+}
+.cnt:empty { display: none; }
+
+/* buttons */
+.btn {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 54px; padding: 0 28px;
+  background: var(--ink); color: #fff; border: 1px solid var(--ink); border-radius: 2px;
+  font-size: 12px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase;
+  transition: background var(--t), color var(--t), border-color var(--t);
+}
+.btn:hover { background: #333; border-color: #333; }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn.ghost:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+.btn.auto { display: inline-flex; width: auto; }
+.link { display: inline-block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; border-bottom: 1px solid currentColor; padding-bottom: 3px; }
+
+/* sections */
+.sec { padding: 104px var(--pad) 0; }
+.sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; margin-bottom: 32px; }
+.sec-h h2 { font-size: 28px; letter-spacing: -.01em; }
+
+/* product card */
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 48px 16px; }
+.card { position: relative; }
+.ph { position: relative; display: block; aspect-ratio: 4 / 5; background: var(--tile); overflow: hidden; }
+.ph img { position: absolute; inset: 0; }
+.ph .alt { object-fit: cover; opacity: 0; transition: opacity var(--t); }
+.card:hover .alt[src] { opacity: 1; }
+.tag { position: absolute; left: 12px; top: 12px; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
+.fav { position: absolute; right: 2px; top: 2px; z-index: 2; width: 40px; height: 40px; display: grid; place-items: center; }
+.fav svg { width: 18px; height: 18px; transition: fill var(--t); }
+.fav.on svg { fill: var(--ink); }
+.meta { display: flex; flex-direction: column; padding-top: 14px; font-size: 13px; line-height: 1.5; }
+.meta b { font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 2px; }
+.meta .price { margin-top: 6px; }
+
+/* home */
+.hero { position: relative; display: block; height: calc(100svh - var(--hh)); min-height: 560px; max-height: 1040px; background: var(--tile); overflow: hidden; }
+.hero-img { position: absolute; inset: -11% 0; }
+.hero-top { position: absolute; left: var(--pad); top: 36px; }
+.hero-txt { position: absolute; left: var(--pad); bottom: 48px; }
+.hero-txt h1 { font-size: clamp(34px, 4.2vw, 60px); line-height: 1.04; letter-spacing: -.025em; }
+.hero-txt p { margin-top: 12px; font-size: 15px; color: var(--mut); }
+.hero-txt .p { margin: 4px 0 26px; font-size: 18px; color: var(--ink); }
+
+.scroller {
+  display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 48px) / 4); gap: 16px;
+  margin: 0 calc(-1 * var(--pad)); padding: 0 var(--pad); scroll-padding: 0 var(--pad);
+  overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+}
+.scroller::-webkit-scrollbar { display: none; }
+.scroller > * { scroll-snap-align: start; }
+.arrows { display: flex; gap: 4px; }
+.arrows button { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 2px; font-size: 15px; transition: border-color var(--t); }
+.arrows button:hover { border-color: var(--ink); }
+
+.ed { display: grid; grid-template-columns: 1.5fr 1fr; margin-top: 104px; min-height: 640px; background: #111; color: #fff; }
+.ed-media { position: relative; overflow: hidden; min-height: 360px; }
+.ed-media img, .film img { position: absolute; inset: 0; object-fit: cover; animation: drift 18s ease-in-out infinite alternate; }
+@keyframes drift { from { transform: scale(1); } to { transform: scale(1.09); } }
+.ed-txt { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; padding: 64px; }
+.ed-txt h2 { margin: 16px 0; font-size: clamp(28px, 3vw, 44px); line-height: 1.08; letter-spacing: -.02em; }
+.ed-txt p { max-width: 420px; margin-bottom: 28px; font-size: 15px; color: #B8B8B8; }
+
+.brands { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+.brands a {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 34px 24px;
+  border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 19px; transition: background var(--t);
+}
+.brands a:hover { background: var(--warm); }
+.brands i { font-style: normal; font-size: 12px; color: var(--mut); }
+
+.revs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px 16px; }
+.rev { padding-top: 20px; border-top: 1px solid var(--ink); }
+.stars { font-size: 12px; letter-spacing: .22em; }
+.rev p { margin: 14px 0 20px; font-size: 16px; line-height: 1.5; }
+.rev footer { font-size: 12px; color: var(--mut); }
+.rev footer a { color: var(--ink); border-bottom: 1px solid var(--line); }
+
+.ugc { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; }
+.ugc a { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--tile); }
+.ugc img { object-fit: cover; transition: transform var(--t); }
+.ugc a:hover img { transform: scale(1.03); }
+.ugc span, .badge {
+  position: absolute; left: 10px; bottom: 10px; padding: 3px 7px; background: #fff; border-radius: 2px; font-size: 11px; font-style: normal;
+}
+.ugc span { opacity: 0; transition: opacity var(--t); }
+.ugc a:hover span { opacity: 1; }
+.badge.tr { left: auto; bottom: auto; right: 10px; top: 10px; }
+
+/* footer */
+.ftr { margin-top: 120px; padding: 56px var(--pad) 32px; border-top: 1px solid var(--line); font-size: 13px; }
+.ftr-cols { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 32px; }
+.ftr h5 { margin-bottom: 14px; font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+.ftr-cols a, .ftr-cols span { display: block; margin-bottom: 8px; color: var(--mut); transition: color var(--t); }
+.ftr-cols a:hover { color: var(--ink); }
+.ftr p { margin-top: 16px; }
+.ftr-bot { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 12px; }
+
+/* overlay, drawer */
+.overlay { position: fixed; inset: 0; z-index: 90; background: rgba(17, 17, 17, .4); opacity: 0; pointer-events: none; transition: opacity var(--t); }
+.overlay.on { opacity: 1; pointer-events: auto; }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 100; width: min(460px, 100%); display: flex; flex-direction: column;
+  padding-top: var(--sat); background: #fff; transform: translateX(100%); visibility: hidden; transition: transform 250ms ease, visibility 0s 250ms;
+}
+.drawer.on { transform: none; visibility: visible; transition: transform 250ms ease, visibility 0s; }
+.drawer > header { flex: none; display: flex; align-items: center; justify-content: space-between; height: var(--hh); padding: 0 16px 0 28px; border-bottom: 1px solid var(--line); }
+.drawer h3 { font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+.d-body { flex: 1; overflow-y: auto; padding: 0 28px; overscroll-behavior: contain; }
+.drawer > footer { flex: none; padding: 20px 28px calc(20px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+.drawer > footer:empty { display: none; }
+.d-empty { padding: 96px 0; text-align: center; }
+.d-empty p { margin-bottom: 20px; font-size: 16px; }
+
+.ci { display: grid; grid-template-columns: 92px 1fr auto; gap: 16px; padding: 24px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.ci b { display: block; font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+.ci button { margin-top: 12px; font-size: 12px; color: var(--mut); border-bottom: 1px solid var(--line); }
+.rows { padding: 18px 0; }
+.row { display: flex; justify-content: space-between; gap: 16px; padding: 5px 0; }
+.row.total { padding: 0 0 16px; font-size: 16px; }
+.note { margin-top: 12px; font-size: 12px; color: var(--mut); text-align: center; }
+
+.fg { padding: 24px 0 18px; border-bottom: 1px solid var(--line); }
+.fg h4 { margin-bottom: 10px; font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+.opt { display: flex; align-items: center; gap: 12px; padding: 7px 0; cursor: pointer; }
+.opt input {
+  appearance: none; -webkit-appearance: none; flex: none; width: 16px; height: 16px; display: grid; place-items: center;
+  border: 1px solid #B5B5B5; border-radius: 1px; cursor: pointer; transition: background var(--t), border-color var(--t);
+}
+.opt input:checked { background: var(--ink); border-color: var(--ink); }
+.opt input:checked::after { content: ""; width: 8px; height: 4px; margin-top: -2px; border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: rotate(-45deg); }
+.opt i { margin-left: auto; font-style: normal; font-size: 12px; color: var(--mut); }
+.two { display: grid; grid-template-columns: 1fr 1.5fr; gap: 8px; }
+
+/* search */
+.search { position: fixed; inset: 0; z-index: 110; padding-top: var(--sat); background: #fff; overflow-y: auto; opacity: 0; visibility: hidden; transition: opacity var(--t), visibility 0s 200ms; }
+.search.on { opacity: 1; visibility: visible; transition: opacity var(--t), visibility 0s; }
+.search-bar { display: flex; align-items: center; gap: 16px; height: 88px; padding: 0 var(--pad); border-bottom: 1px solid var(--line); }
+.search-bar input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 24px; -webkit-appearance: none; }
+.search-res { max-width: 880px; padding: 28px var(--pad) 96px; }
+.search-res .over { margin-bottom: 8px; }
+.sr { display: grid; grid-template-columns: 60px 1fr auto; gap: 16px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.sr b { font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+
+.tabbar { display: none; }
+
+/* catalog */
+.cat-h { padding: 56px var(--pad) 28px; }
+.cat-h h1 { font-size: clamp(32px, 3.4vw, 48px); line-height: 1.1; letter-spacing: -.02em; }
+.cat-h p { margin-top: 8px; color: var(--mut); }
+.bar {
+  position: sticky; top: calc(var(--hh) + var(--sat)); z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  height: 52px; padding: 0 var(--pad); background: #fff; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.f-row { display: flex; gap: 28px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+.f-row::-webkit-scrollbar { display: none; }
+.f-row button, .sort { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+.f-row button { height: 50px; }
+.f-row sup { margin-left: 3px; font-size: 9px; }
+.sort { flex: none; max-width: 46vw; border: 0; outline: 0; background: none; appearance: none; -webkit-appearance: none; cursor: pointer; text-align: right; text-align-last: right; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px var(--pad) 0; }
+.chips:empty { display: none; }
+.chip { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 2px; font-size: 12px; transition: border-color var(--t); }
+.chip:hover { border-color: var(--ink); }
+.chip.clear { border-color: transparent; color: var(--mut); text-decoration: underline; }
+.cat-grid { padding: 28px var(--pad) 0; }
+.banner { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; min-height: 420px; background: var(--warm); }
+.banner .ph { aspect-ratio: auto; min-height: 280px; }
+.banner .ph img { object-fit: cover; }
+.banner div { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 48px 64px; }
+.banner h3 { margin: 14px 0 12px; font-size: clamp(24px, 2.4vw, 36px); line-height: 1.1; letter-spacing: -.02em; }
+.banner p { max-width: 420px; margin-bottom: 24px; font-size: 15px; color: var(--mut); }
+.empty { grid-column: 1 / -1; padding: 120px 0; text-align: center; }
+.empty p { margin-bottom: 20px; font-size: 18px; }
+
+.blist a {
+  display: flex; justify-content: space-between; align-items: baseline; padding: 28px var(--pad); border-top: 1px solid var(--line);
+  font-size: clamp(26px, 3.4vw, 52px); line-height: 1.1; letter-spacing: -.02em; transition: background var(--t), padding var(--t);
+}
+.blist a:last-child { border-bottom: 1px solid var(--line); }
+.blist a:hover { background: var(--warm); padding-left: calc(var(--pad) + 12px); }
+.blist i { font-style: normal; font-size: 13px; letter-spacing: 0; color: var(--mut); }
+
+/* product page */
+.pdp { display: grid; grid-template-columns: minmax(0, 65fr) minmax(0, 35fr); border-bottom: 1px solid var(--line); }
+.gal-wrap { position: relative; }
+.gal { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.gal figure { position: relative; aspect-ratio: 4 / 5; background: var(--tile); overflow: hidden; }
+.gal figure:first-child { grid-column: 1 / -1; aspect-ratio: auto; height: calc(100vh - var(--hh)); min-height: 600px; }
+.gal img { position: absolute; inset: 0; }
+.gal .cv img { object-fit: cover; }
+.gal-n { display: none; }
+.buy {
+  position: sticky; top: calc(var(--hh) + var(--sat)); align-self: start; display: flex; flex-direction: column; justify-content: center;
+  height: calc(100vh - var(--hh)); min-height: 600px; padding: 0 clamp(28px, 4.5vw, 80px);
+}
+.buy .brand { font-size: 12px; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; }
+.buy h1 { margin: 10px 0 8px; font-size: clamp(28px, 2.6vw, 40px); line-height: 1.08; letter-spacing: -.02em; }
+.buy .ref { font-size: 13px; color: var(--mut); }
+.buy .price { margin: 28px 0 22px; font-size: 22px; }
+.checks { padding: 20px 0 28px; border-top: 1px solid var(--line); }
+.checks li { display: flex; gap: 12px; padding: 5px 0; }
+.checks li::before { content: "✓"; color: var(--ok); }
+.buy .btn + .btn { margin-top: 8px; }
+.buy .more { margin-top: 28px; font-size: 12px; color: var(--mut); }
+
+.film { position: relative; height: min(88vh, 56.25vw); min-height: 420px; background: #2A2A2C; overflow: hidden; }
+.film figcaption { position: absolute; left: var(--pad); bottom: 36px; color: #fff; }
+.film figcaption b { display: block; margin-top: 8px; font-size: clamp(24px, 2.6vw, 40px); font-weight: 400; line-height: 1.1; letter-spacing: -.02em; }
+
+.blk { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 40px; padding: 112px var(--pad); border-top: 1px solid var(--line); }
+.film + .blk { border-top: 0; }
+.blk > header h2, .turn h2 { font-size: clamp(26px, 2.5vw, 38px); line-height: 1.1; letter-spacing: -.02em; }
+.blk > header .over { display: block; margin-bottom: 14px; color: var(--mut); }
+.blk > header p { max-width: 320px; margin-top: 14px; color: var(--mut); }
+.prose p { max-width: 700px; font-size: 18px; line-height: 1.6; }
+.prose p + p { margin-top: 1.1em; }
+
+.specs { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; border-top: 1px solid var(--ink); }
+.specs div { display: flex; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.specs dt { color: var(--mut); }
+.specs dd { text-align: right; }
+
+.turn { padding: 96px var(--pad) 104px; background: var(--warm); border-top: 1px solid var(--line); text-align: center; }
+.turn .over { display: block; margin-bottom: 14px; color: var(--mut); }
+.stage { height: min(68vh, 620px); margin-top: 24px; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.stage:active { cursor: grabbing; }
+.stage svg { display: block; width: 100%; height: 100%; }
+.hint { margin-top: 12px; color: var(--mut); }
+.shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: left; }
+.turn .shots { margin-top: 72px; }
+.shots .ph { aspect-ratio: 1; }
+.shots .ph img { object-fit: cover; }
+.shots figcaption { padding-top: 12px; font-size: 13px; }
+.shots figcaption span { display: block; color: var(--mut); }
+
+.grade { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 40px; }
+.grade span { padding-top: 12px; border-top: 2px solid var(--line); font-size: 12px; color: var(--mut); }
+.grade .on { border-color: var(--ink); color: var(--ink); }
+
+.kit { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; border-top: 1px solid var(--ink); }
+.kit li { display: flex; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.kit .yes span { color: var(--ok); }
+.kit .no { color: var(--mut); }
+
+.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 40px 48px; counter-reset: s; }
+.steps li { padding-top: 16px; border-top: 1px solid var(--ink); }
+.steps li::before { counter-increment: s; content: "0" counter(s); font-size: 12px; color: var(--mut); }
+.steps h4, .svc h4 { margin: 8px 0; font-size: 18px; }
+.steps p, .svc p { color: var(--mut); }
+.nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 56px; }
+.nums b { display: block; font-size: clamp(22px, 2.2vw, 32px); font-weight: 400; letter-spacing: -.02em; }
+.nums span { font-size: 12px; color: var(--mut); }
+
+.rate { font-size: clamp(44px, 5vw, 76px); line-height: 1; letter-spacing: -.03em; }
+.rate small { font-size: .4em; letter-spacing: 0; color: var(--mut); }
+.media { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 24px) / 4); gap: 8px; margin-bottom: 40px; overflow-x: auto; scrollbar-width: none; }
+.media::-webkit-scrollbar { display: none; }
+.media figure { position: relative; aspect-ratio: 4 / 5; background: var(--tile); overflow: hidden; }
+.media img { position: absolute; inset: 0; object-fit: cover; }
+.blk .revs { grid-template-columns: 1fr 1fr; }
+
+.svc { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+.svc li { padding-top: 12px; border-top: 1px solid var(--ink); }
+
+.buybar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: flex; align-items: center; justify-content: flex-end; gap: 24px;
+  padding: 10px var(--pad) calc(10px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid var(--line);
+  transform: translateY(101%); transition: transform var(--t);
+}
+.buybar.on { transform: none; }
+.buybar div { flex: 1; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.buybar b { font-weight: 500; }
+.buybar .btn { flex: none; width: auto; height: 46px; }
+body[data-page="pdp"] { padding-bottom: 67px; }
+
+/* checkout */
+.co { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); min-height: calc(100vh - var(--hh)); }
+.co-form { width: 100%; max-width: 760px; margin-left: auto; padding: 56px var(--pad) 96px; }
+.co-form h1 { margin-bottom: 8px; font-size: clamp(30px, 3vw, 44px); letter-spacing: -.02em; }
+.step { margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--line); }
+.step h2 { display: flex; gap: 14px; margin-bottom: 20px; font-size: 20px; }
+.step h2 i { font-style: normal; color: var(--mut); }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fld { position: relative; }
+.fld.full { grid-column: 1 / -1; }
+.fld input {
+  width: 100%; height: 56px; padding: 18px 14px 0; border: 1px solid #D4D4D4; border-radius: 2px; background: #fff; outline: 0;
+  font-size: 15px; -webkit-appearance: none; transition: border-color var(--t);
+}
+.fld input:focus { border-color: var(--ink); }
+.fld label { position: absolute; left: 15px; top: 18px; color: var(--mut); pointer-events: none; transition: top 150ms ease, font-size 150ms ease; }
+.fld input:focus + label, .fld input:not(:placeholder-shown) + label { top: 8px; font-size: 11px; }
+.fld small { display: none; margin-top: 4px; font-size: 12px; color: var(--err); }
+.fld.err input { border-color: var(--err); }
+.fld.err small { display: block; }
+.radio { display: flex; align-items: flex-start; gap: 14px; padding: 16px; margin-bottom: 8px; border: 1px solid #D4D4D4; border-radius: 2px; cursor: pointer; transition: border-color var(--t); }
+.radio:has(input:checked) { border-color: var(--ink); }
+.radio input { appearance: none; -webkit-appearance: none; flex: none; width: 16px; height: 16px; margin-top: 2px; border: 1px solid #999; border-radius: 50%; cursor: pointer; }
+.radio input:checked { border: 5px solid var(--ink); }
+.radio span { flex: 1; }
+.radio small { display: block; font-size: 13px; color: var(--mut); }
+#addr[hidden] { display: none; }
+.co-buy { margin-top: 36px; }
+.co-sum { padding: 56px var(--pad); background: var(--warm); border-left: 1px solid var(--line); }
+.co-sum .in { position: sticky; top: calc(var(--hh) + 32px); max-width: 440px; }
+.co-sum h2 { font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+.co-sum .ci { grid-template-columns: 72px 1fr auto; padding: 16px 0; }
+.co-sum .rows { margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+.done { max-width: 640px; margin: 0 auto; padding: 120px var(--pad) 40px; text-align: center; }
+.done h1 { margin: 16px 0; font-size: clamp(30px, 3.4vw, 48px); line-height: 1.1; letter-spacing: -.02em; }
+.done p { margin-bottom: 32px; font-size: 16px; color: var(--mut); }
+
+/* responsive */
+@media (max-width: 1100px) {
+  :root { --pad: 28px; }
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .scroller { grid-auto-columns: calc((100% - 32px) / 3); }
+  .brands { grid-template-columns: repeat(2, 1fr); }
+  .ugc { grid-template-columns: repeat(3, 1fr); }
+  .ed { grid-template-columns: 1fr; min-height: 0; }
+  .ed-media { aspect-ratio: 16 / 10; }
+  .ed-txt { padding: 48px var(--pad); }
+  .blk { grid-template-columns: 1fr; gap: 32px; padding: 80px var(--pad); }
+  .banner div { padding: 40px; }
+}
+@media (max-width: 900px) {
+  .pdp { display: block; }
+  .gal { display: flex; gap: 0; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .gal::-webkit-scrollbar { display: none; }
+  .gal figure, .gal figure:first-child { flex: 0 0 100%; aspect-ratio: 4 / 5; height: auto; min-height: 0; scroll-snap-align: start; }
+  .gal-n { display: block; position: absolute; right: 12px; bottom: 12px; padding: 3px 8px; background: #fff; border-radius: 2px; font-size: 11px; }
+  .buy { position: static; height: auto; min-height: 0; padding: 28px var(--pad) 44px; }
+  .co { display: flex; flex-direction: column-reverse; }
+  .co-form { max-width: none; padding-top: 28px; }
+  .co-sum { padding: 28px var(--pad); border-left: 0; border-bottom: 1px solid var(--line); }
+  .co-sum .in { position: static; max-width: none; }
+}
+@media (max-width: 760px) {
+  :root { --pad: 16px; --hh: 52px; }
+  body { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
+  .hdr { grid-template-columns: 1fr auto; }
+  .nav, .hdr .ico-fav { display: none; }
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: grid; grid-template-columns: repeat(5, 1fr);
+    padding-bottom: env(safe-area-inset-bottom); background: #fff; border-top: 1px solid var(--line);
+  }
+  .tabbar > * { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 56px; font-size: 10px; color: var(--mut); }
+  .tabbar .on { color: var(--ink); }
+  .tabbar .cnt { top: 6px; right: calc(50% - 20px); }
+  body[data-page="pdp"] .tabbar, body[data-page="checkout"] .tabbar { display: none; }
+  body[data-page="checkout"] { padding-bottom: 0; }
+
+  .sec { padding-top: 72px; }
+  .sec-h { margin-bottom: 20px; }
+  .sec-h h2 { font-size: 22px; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 8px; }
+  .scroller { grid-auto-columns: 62%; gap: 8px; }
+  .arrows { display: none; }
+  .meta { padding-top: 10px; }
+  .fav { width: 36px; height: 36px; }
+
+  .hero { display: flex; flex-direction: column; height: calc(100svh - var(--hh) - 56px); min-height: 520px; background: #fff; }
+  .hero-img { position: relative; inset: auto; flex: 1; min-height: 0; background: var(--tile); }
+  .hero-img img { position: absolute; inset: 0; object-fit: cover; }
+  .hero-top { top: 16px; }
+  .hero-txt { position: static; padding: 20px var(--pad) 24px; }
+  .hero-txt .p { margin-bottom: 18px; }
+  .hero-txt .btn { display: flex; width: 100%; }
+
+  .ed { margin-top: 72px; }
+  .ed-media { aspect-ratio: 4 / 5; }
+  .brands a { padding: 22px 14px; font-size: 15px; }
+  .revs, .blk .revs { grid-template-columns: 1fr; gap: 28px; }
+  .ugc span { display: none; }
+  .ftr { margin-top: 80px; padding-top: 40px; }
+  .ftr-cols { grid-template-columns: 1fr 1fr; }
+  .ftr-cols > :first-child { grid-column: 1 / -1; }
+
+  .cat-h { padding: 32px var(--pad) 20px; }
+  .f-row { gap: 20px; }
+  .cat-grid { padding-top: 16px; }
+  .banner { grid-template-columns: 1fr; }
+  .banner div { padding: 28px 20px 36px; }
+  .blist a { padding: 20px var(--pad); }
+  .search-bar { height: 64px; }
+  .search-bar input { font-size: 18px; }
+  .d-body { padding: 0 20px; }
+  .drawer > header { padding-left: 20px; }
+  .drawer > footer { padding-left: 20px; padding-right: 20px; }
+
+  .film { height: 125vw; min-height: 0; }
+  .film figcaption { bottom: 24px; }
+  .blk { padding: 64px var(--pad); gap: 24px; }
+  .prose p { font-size: 16px; }
+  .specs, .kit, .steps, .svc { grid-template-columns: 1fr; }
+  .steps { gap: 28px; }
+  .nums { grid-template-columns: 1fr 1fr; gap: 24px 16px; margin-top: 40px; }
+  .turn { padding: 64px 0 72px; }
+  .stage { height: 60vh; }
+  .shots { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 70%; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 calc(-1 * var(--pad)); padding: 0 var(--pad); scroll-padding: 0 var(--pad); }
+  .shots::-webkit-scrollbar { display: none; }
+  .shots figure { scroll-snap-align: start; }
+  .turn .shots { margin: 48px 0 0; }
+  .media { grid-auto-columns: 44%; margin: 0 calc(-1 * var(--pad)) 32px; padding: 0 var(--pad); }
+  .buybar { gap: 12px; }
+  .fields { grid-template-columns: 1fr; }
+  .fld input { font-size: 16px; }
+  .done { padding-top: 72px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ed-media img, .film img { animation: none; }
+}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <a class="logo" href="#/">SMQ TIME</a>
+  <nav class="nav">
+    <a href="#/catalog">Каталог</a>
+    <a href="#/brands">Бренды</a>
+    <a href="#/catalog?new=1">Новинки</a>
+  </nav>
+  <div class="tools">
+    <button class="ico" data-act="search" aria-label="Поиск"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
+    <a class="ico ico-fav" href="#/wishlist" aria-label="Избранное"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.3-7-9.5A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.5C19 15.7 12 20 12 20z"/></svg><i class="cnt cnt-fav"></i></a>
+    <button class="ico" data-act="cart" aria-label="Корзина"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg><i class="cnt cnt-cart"></i></button>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<footer class="ftr">
+  <div class="ftr-cols">
+    <div><div class="logo">SMQ TIME</div><p class="muted">Проверенные часы с гарантией.<br>Москва, Петровка, 12 · ежедневно 11–21</p></div>
+    <div><h5>Покупателям</h5><a href="#/catalog">Каталог</a><a href="#/brands">Бренды</a><a href="#/catalog?new=1">Новинки</a></div>
+    <div><h5>Сервис</h5><span>Доставка и оплата</span><span>Возврат 14 дней</span><span>Гарантия 12 месяцев</span></div>
+    <div><h5>Связь</h5><span>+7 495 000-00-00</span><span>hello@smqtime.example</span><span>Telegram · WhatsApp</span></div>
+  </div>
+  <div class="ftr-bot muted">© 2026 SMQ TIME. Демо-версия макета: товары, цены, отзывы и контакты — примеры, изображения часов — иллюстрации.</div>
+</footer>
+
+<nav class="tabbar">
+  <a href="#/"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/></svg><span>Главная</span></a>
+  <a href="#/catalog"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></svg><span>Каталог</span></a>
+  <button data-act="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>Поиск</span></button>
+  <a href="#/wishlist"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.3-7-9.5A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.5C19 15.7 12 20 12 20z"/></svg><span>Избранное</span><i class="cnt cnt-fav"></i></a>
+  <button data-act="cart"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg><span>Корзина</span><i class="cnt cnt-cart"></i></button>
+</nav>
+
+<div class="overlay" data-act="close"></div>
+
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <header><h3 id="d-title"></h3><button class="ico" data-act="close" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button></header>
+  <div class="d-body" id="d-body"></div>
+  <footer id="d-foot"></footer>
+</aside>
+
+<div class="search" id="search">
+  <div class="search-bar">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+    <input id="q" type="search" placeholder="Бренд, модель или референс" autocomplete="off">
+    <button class="ico" data-act="close" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+  </div>
+  <div class="search-res" id="q-res"></div>
+</div>
+<script>
+// Каталог. Поле d — параметры иллюстрации; чтобы подставить реальные фото,
+// добавьте часам photos: { front, wrist, angle, dial, back, crown, strap, bezel }.
+const MATS = { steel: 'Сталь', gold: 'Жёлтое золото', rose: 'Розовое золото', titan: 'Титан' };
+const SETS = { full: 'Полный комплект', card: 'Часы и гарантийная карта', watch: 'Только часы' };
+
+const WATCHES = [
+  { id: 'submariner-date', brand: 'Rolex', model: 'Submariner Date', ref: '126610LN', year: 2025, size: 41, price: 1490000, cond: 'Новые', mat: 'steel', mov: 'Автоматический', cal: '3235', res: 70, wr: 300, set: 'full', isNew: 1, pop: 1,
+    lead: 'Эталон дайверских часов: чёрный керамический безель, крупные светящиеся метки и браслет Oyster с замком Glidelock.',
+    d: { dial: '#111214', bezel: 'dive', idx: 'dots', hands: 'mercedes', strap: 'oyster', date: 3 } },
+  { id: 'daytona', brand: 'Rolex', model: 'Cosmograph Daytona', ref: '126500LN', year: 2024, size: 40, price: 3450000, cond: 'Новые', mat: 'steel', mov: 'Автоматический', cal: '4131', res: 72, wr: 100, set: 'full', pop: 1,
+    lead: 'Самый желанный хронограф в мире: белый циферблат с контрастными счётчиками и тахиметрическая шкала на керамическом безеле.',
+    d: { dial: '#F3F2EE', bezel: 'tachy', idx: 'batons', hands: 'baton', strap: 'oyster', subs: 369, chrono: 1, sr: '#15161A' } },
+  { id: 'gmt-master-ii', brand: 'Rolex', model: 'GMT-Master II', ref: '126710BLRO', year: 2023, size: 40, price: 2390000, cond: 'Отличное', mat: 'steel', mov: 'Автоматический', cal: '3285', res: 70, wr: 100, set: 'full', pop: 1,
+    lead: 'Часы путешественника: двухцветный сине-красный безель и дополнительная стрелка второго часового пояса на браслете Jubilee.',
+    d: { dial: '#111214', bezel: 'gmt', bc: '#1C3F8C', bc2: '#A8242C', idx: 'dots', hands: 'mercedes', strap: 'jubilee', date: 3, gmt: 1 } },
+  { id: 'datejust-41', brand: 'Rolex', model: 'Datejust 41', ref: '126334', year: 2022, size: 41, price: 1290000, cond: 'Отличное', mat: 'steel', mov: 'Автоматический', cal: '3235', res: 70, wr: 100, set: 'full',
+    lead: 'Классика на каждый день: синий циферблат с лучевой шлифовкой и рифлёный безель из белого золота.',
+    d: { dial: '#1F3B66', bezel: 'fluted', idx: 'batons', hands: 'baton', strap: 'jubilee', date: 3 } },
+  { id: 'day-date-40', brand: 'Rolex', model: 'Day-Date 40', ref: '228238', year: 2021, size: 40, price: 4950000, cond: 'Очень хорошее', mat: 'gold', mov: 'Автоматический', cal: '3255', res: 70, wr: 100, set: 'card',
+    lead: '«Президентские» часы из жёлтого золота 18 карат: день недели в окне на 12 часов и цельнозолотой браслет President.',
+    d: { dial: '#D9BE86', bezel: 'fluted', idx: 'batons', hands: 'baton', strap: 'jubilee', date: 3, day: 1, ink: '#3A2C12' } },
+  { id: 'explorer-36', brand: 'Rolex', model: 'Explorer', ref: '124270', year: 2025, size: 36, price: 960000, cond: 'Новые', mat: 'steel', mov: 'Автоматический', cal: '3230', res: 70, wr: 100, set: 'full', isNew: 1,
+    lead: 'Часы первопроходцев в исходном размере 36 мм: чёрный циферблат с цифрами 3, 6 и 9 читается в любых условиях.',
+    d: { dial: '#111214', bezel: 'smooth', idx: 'explorer', hands: 'mercedes', strap: 'oyster' } },
+  { id: 'oyster-perpetual-41', brand: 'Rolex', model: 'Oyster Perpetual 41', ref: '124300', year: 2024, size: 41, price: 890000, cond: 'Новые', mat: 'steel', mov: 'Автоматический', cal: '3230', res: 70, wr: 100, set: 'full', isNew: 1,
+    lead: 'Чистая форма Oyster без усложнений: зелёный циферблат с лучевой шлифовкой и полированный гладкий безель.',
+    d: { dial: '#1F5C45', bezel: 'smooth', idx: 'batons', hands: 'baton', strap: 'oyster' } },
+  { id: 'speedmaster', brand: 'Omega', model: 'Speedmaster Moonwatch', ref: '310.30.42.50.01.002', year: 2024, size: 42, price: 720000, cond: 'Новые', mat: 'steel', mov: 'Ручной завод', cal: '3861', res: 50, wr: 50, set: 'full', pop: 1, isNew: 1,
+    lead: 'Часы, побывавшие на Луне. Хронограф с ручным заводом, сапфировым стеклом и прозрачной задней крышкой.',
+    d: { dial: '#141414', bezel: 'tachy', idx: 'batons', hands: 'baton', strap: 'oyster', subs: 369, chrono: 1, open: 1, hc: '#F2F0EA' } },
+  { id: 'seamaster-300m', brand: 'Omega', model: 'Seamaster Diver 300M', ref: '210.30.42.20.03.001', year: 2023, size: 42, price: 560000, cond: 'Отличное', mat: 'steel', mov: 'Автоматический', cal: '8800', res: 55, wr: 300, set: 'full',
+    lead: 'Синий керамический циферблат с волнами, гелиевый клапан и калибр с сертификатом Master Chronometer.',
+    d: { dial: '#1B3A63', bezel: 'dive', bc: '#1B3A63', idx: 'dots', hands: 'baton', strap: 'oyster', date: 6, tex: 'lines', sec: '#C7352B', open: 1 } },
+  { id: 'santos', brand: 'Cartier', model: 'Santos de Cartier', ref: 'WSSA0018', year: 2024, size: 39.8, sizeLabel: '39,8 mm', price: 890000, cond: 'Новые', mat: 'steel', mov: 'Автоматический', cal: '1847 MC', res: 42, wr: 100, set: 'full', pop: 1, isNew: 1,
+    lead: 'Первые наручные часы для пилота, 1904 год. Квадратный корпус, винты на безеле и римские цифры.',
+    d: { shape: 'square', dial: '#F4F3EF', idx: 'roman', hands: 'sword', hc: '#1F3A6E', strap: 'integrated', cab: 1 } },
+  { id: 'tank-louis', brand: 'Cartier', model: 'Tank Louis Cartier', ref: 'WGTA0011', year: 2023, size: 33.7, sizeLabel: '33,7 × 25,5 mm', price: 1350000, cond: 'Отличное', mat: 'rose', mov: 'Ручной завод', cal: '8971 MC', res: 38, wr: 30, set: 'full', pop: 1,
+    lead: 'Прямоугольник, который не меняется больше ста лет. Розовое золото, синие стрелки и кабошон на заводной головке.',
+    d: { shape: 'rect', dial: '#F3F1EA', idx: 'roman', hands: 'sword', hc: '#1F3A6E', strap: 'leather', sc: '#5A3A26', cab: 1 } },
+  { id: 'royal-oak', brand: 'Audemars Piguet', model: 'Royal Oak', ref: '15510ST.OO.1320ST.06', year: 2023, size: 41, price: 5900000, cond: 'Отличное', mat: 'steel', mov: 'Автоматический', cal: '4302', res: 70, wr: 50, set: 'full', pop: 1,
+    lead: 'Восьмиугольный безель на восьми винтах и циферблат с узором Grande Tapisserie — часы, с которых начался жанр luxury sport.',
+    d: { shape: 'oct', dial: '#1D3557', idx: 'batons', hands: 'baton', strap: 'integrated', date: 3, tex: 'grid', open: 1 } },
+  { id: 'nautilus', brand: 'Patek Philippe', model: 'Nautilus', ref: '5711/1A-010', year: 2019, size: 40, price: 12500000, cond: 'Очень хорошее', mat: 'steel', mov: 'Автоматический', cal: '26-330 S C', res: 45, wr: 120, set: 'full', pop: 1,
+    lead: 'Снятая с производства легенда. Сине-чёрный циферблат с горизонтальным тиснением и интегрированный браслет.',
+    d: { shape: 'soft', dial: '#22405F', idx: 'batons', hands: 'baton', strap: 'integrated', date: 3, tex: 'lines', open: 1 } },
+  { id: 'calatrava', brand: 'Patek Philippe', model: 'Calatrava', ref: '5227R-001', year: 2022, size: 39, price: 3650000, cond: 'Отличное', mat: 'rose', mov: 'Автоматический', cal: '324 S C', res: 45, wr: 30, set: 'full',
+    lead: 'Образец классических часов: корпус из розового золота, лакированный циферблат цвета слоновой кости и откидная крышка.',
+    d: { dial: '#F2EBDD', bezel: 'smooth', idx: 'batons', hands: 'sword', strap: 'leather', sc: '#3A2416', date: 3, open: 1, rotor: 'gold' } },
+  { id: 'portugieser', brand: 'IWC', model: 'Portugieser Chronograph', ref: 'IW371605', year: 2024, size: 41, price: 790000, cond: 'Новые', mat: 'steel', mov: 'Автоматический', cal: '69355', res: 46, wr: 30, set: 'full', isNew: 1,
+    lead: 'Тонкий безель, накладные арабские цифры и синие стрелки-листья. Хронограф с вертикальными счётчиками.',
+    d: { dial: '#F6F5F1', bezel: 'smooth', idx: 'arabic', hands: 'leaf', hc: '#1F3A6E', ink: '#1F3A6E', strap: 'leather', sc: '#1F2E4D', subs: 126, chrono: 1, open: 1 } },
+  { id: 'luminor', brand: 'Panerai', model: 'Luminor Marina', ref: 'PAM01312', year: 2022, size: 44, price: 690000, cond: 'Очень хорошее', mat: 'steel', mov: 'Автоматический', cal: 'P.9010', res: 72, wr: 300, set: 'card',
+    lead: 'Подушкообразный корпус и запатентованный мост, защищающий заводную головку. Циферблат-сэндвич светится в темноте.',
+    d: { shape: 'cushion', dial: '#141414', idx: 'sandwich', hands: 'baton', strap: 'leather', sc: '#6B4A2F', date: 3, subs: 9, lume: '#E3D3A8', open: 1 } },
+  { id: 'black-bay-58', brand: 'Tudor', model: 'Black Bay 58', ref: 'M79030N-0001', year: 2024, size: 39, price: 390000, cond: 'Новые', mat: 'steel', mov: 'Автоматический', cal: 'MT5402', res: 70, wr: 200, set: 'full', isNew: 1,
+    lead: 'Дайвер в пропорциях 1958 года: 39 мм, золотистые акценты на безеле и узнаваемая стрелка-«снежинка».',
+    d: { dial: '#151515', bezel: 'dive', bm: '#C8A766', idx: 'dots', hands: 'snow', hm: 'gold', strap: 'oyster' } },
+  { id: 'pelagos-39', brand: 'Tudor', model: 'Pelagos 39', ref: 'M25407N-0001', year: 2023, size: 39, price: 430000, cond: 'Отличное', mat: 'titan', mov: 'Автоматический', cal: 'MT5400', res: 70, wr: 200, set: 'full',
+    lead: 'Титановый инструмент на каждый день: лёгкий корпус, матовый керамический безель и квадратные метки.',
+    d: { dial: '#141414', bezel: 'dive', idx: 'dots', sq: 1, hands: 'snow', strap: 'oyster', sec: '#C7352B' } },
+  { id: 'reverso', brand: 'Jaeger-LeCoultre', model: 'Reverso Classic', ref: 'Q3858520', year: 2023, size: 45.6, sizeLabel: '45,6 × 27,4 mm', price: 870000, cond: 'Отличное', mat: 'steel', mov: 'Ручной завод', cal: '822/2', res: 42, wr: 30, set: 'full',
+    lead: 'Корпус-перевёртыш, придуманный для игроков в поло в 1931 году. Ар-деко в чистом виде.',
+    d: { shape: 'rect', gad: 1, dial: '#EDEBE6', idx: 'arabic', hands: 'sword', hc: '#1F3A6E', strap: 'leather', sc: '#161616', subs: 6 } },
+  { id: 'overseas', brand: 'Vacheron Constantin', model: 'Overseas', ref: '4500V/110A-B128', year: 2022, size: 41, price: 3900000, cond: 'Отличное', mat: 'steel', mov: 'Автоматический', cal: '5100', res: 60, wr: 150, set: 'full',
+    lead: 'Спортивная элегантность старейшей мануфактуры: синий лакированный циферблат и безель в форме мальтийского креста.',
+    d: { dial: '#1E3A6B', bezel: 'notch', idx: 'batons', hands: 'baton', strap: 'integrated', date: 3, open: 1 } },
+];
+WATCHES.forEach((w, i) => { w.v = [0, 1, 4, 2][i % 4]; });
+
+const BRANDS = [...new Set(WATCHES.map(w => w.brand))].sort();
+
+const REVIEWS = [
+  { name: 'Алексей М.', city: 'Москва', date: 'сентябрь 2026', w: 'submariner-date', text: 'Привезли на следующий день. Курьер дождался, пока я сверю номера, карту и ход. Состояние — ровно как на фотографиях.' },
+  { name: 'Дмитрий К.', city: 'Санкт-Петербург', date: 'август 2026', w: 'speedmaster', text: 'Брал Speedmaster в подарок отцу. Отдельное спасибо за отчёт о проверке с замерами точности — такого нигде не давали.' },
+  { name: 'Марина С.', city: 'Казань', date: 'август 2026', w: 'tank-louis', text: 'Долго сомневалась, покупать ли часы онлайн. Видео на руке и крупные планы сняли все вопросы. Tank идеален.' },
+  { name: 'Игорь В.', city: 'Екатеринбург', date: 'июль 2026', w: 'royal-oak', text: 'Royal Oak с полным комплектом и честным описанием состояния. Оформил за пару минут, без регистрации и звонков.' },
+  { name: 'Тимур А.', city: 'Москва', date: 'июль 2026', w: 'gmt-master-ii', text: 'Третья покупка здесь. Нравится, что цена окончательная, а гарантия год — без мелкого шрифта.' },
+  { name: 'Ольга Н.', city: 'Сочи', date: 'июнь 2026', w: 'santos', text: 'Santos приехал в оригинальной коробке, со всеми бирками. Браслет подогнали под мой размер бесплатно.' },
+];
+
+// Параметрические иллюстрации часов (SVG): геометрия, браслет, корпус, безель.
+const CX = 200, CY = 250, LUME = '#F1EEDF';
+const SANS = 'font-family="Helvetica Neue,Helvetica,Arial,sans-serif"';
+// [светлый, средний, тёмный, контур]
+const MAT = {
+  steel: ['#F4F5F6', '#C7CACF', '#8C9096', '#72767C'],
+  gold: ['#F8E7B8', '#D9B76C', '#A9853E', '#8C6C2C'],
+  rose: ['#F7D9C8', '#DBA688', '#AC785C', '#8E5F47'],
+  titan: ['#CFD1D3', '#9B9EA2', '#6F7276', '#585B5F'],
+};
+const hex3 = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, t) => { const A = hex3(a), B = hex3(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+const lum = h => { const [r, g, b] = hex3(h); return (r * 299 + g * 587 + b * 114) / 1000; };
+const r1 = v => Math.round(v * 10) / 10;
+const pol = (a, r) => { const t = a * Math.PI / 180; return [r1(CX + r * Math.sin(t)), r1(CY - r * Math.cos(t))]; };
+const radial = (a, ra, rb, sw, col, op = 1) => {
+  const [x1, y1] = pol(a, ra), [x2, y2] = pol(a, rb);
+  return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${sw}" opacity="${op}"/>`;
+};
+
+// hw/hh — полуразмеры корпуса, dw/dh — прямоугольного циферблата, rd — радиус для стрелок
+function geo(w) {
+  switch (w.d.shape) {
+    case 'rect': return { hw: 78, hh: 112, dw: 58, dh: 90, rd: 56, rx: 8, drx: 3 };
+    case 'square': return { hw: 114, hh: 114, dw: 80, dh: 80, rd: 76, rx: 34, drx: 10 };
+    case 'soft': return { hw: 120, hh: 116, dw: 92, dh: 88, rd: 84, rx: 70, drx: 46 };
+    case 'oct': return { hw: 122, hh: 122, rd: 88, rx: 50 };
+    case 'cushion': return { hw: 122, hh: 122, rd: 92, rx: 84 };
+    default: return { hw: 120, hh: 120, rd: w.d.bezel === 'smooth' ? 103 : 95 };
+  }
+}
+function edge(g, a) {
+  if (!g.dw) return g.rd;
+  const t = a * Math.PI / 180;
+  return Math.min(g.dw / Math.max(Math.abs(Math.sin(t)), 1e-6), g.dh / Math.max(Math.abs(Math.cos(t)), 1e-6));
+}
+
+function strapGeo(w) {
+  const g = geo(w), integ = w.d.strap === 'integrated';
+  const wd = w.d.shape === 'rect' ? g.hw - 14 : integ ? 78 : 60;
+  return { wd, we: integ ? 56 : wd - 8, y0: CY - g.hh + 24 };
+}
+function strapPoly(w, k = 1) {
+  const { wd, we, y0 } = strapGeo(w);
+  return `${r1(CX - wd * k)},${y0} ${r1(CX + wd * k)},${y0} ${r1(CX + we * k)},-10 ${r1(CX - we * k)},-10`;
+}
+const twice = h => h + `<g transform="rotate(180 ${CX} ${CY})">${h}</g>`;
+const isMetal = w => w.d.strap !== 'leather';
+
+function strapSil(w, fill) {
+  return twice(`<polygon points="${strapPoly(w)}" fill="${isMetal(w) ? fill : mix(w.d.sc, '#000000', .3)}"/>`);
+}
+
+function strapEl(w, back) {
+  const { wd, we, y0 } = strapGeo(w), t = w.d.strap, [l, , , ln] = MAT[w.mat];
+  const at = y => we + (wd - we) * (y + 10) / (y0 + 10);
+  let o;
+  if (!isMetal(w)) {
+    const c = w.d.sc;
+    o = `<polygon points="${strapPoly(w)}" fill="${back ? mix(c, '#B9A78C', .55) : c}"/>`;
+    if (!back) o += [-1, 1].map(s => `<line x1="${CX + s * (wd - 7)}" y1="${y0}" x2="${CX + s * (we - 7)}" y2="-10" stroke="${mix(c, '#ffffff', .4)}" stroke-width="1.2" stroke-dasharray="6 4"/>`).join('');
+  } else {
+    const k = t === 'jubilee' ? .26 : t === 'integrated' ? .3 : .4;
+    o = `<polygon points="${strapPoly(w)}" fill="url(#mb)" stroke="${ln}" stroke-width=".6"/>`;
+    o += `<polygon points="${strapPoly(w, k)}" fill="${l}" opacity="${back ? .15 : .4}"/>`;
+    const step = t === 'jubilee' ? 11 : t === 'integrated' ? 15 : 21;
+    for (let y = y0 - 4; y > -10; y -= step) o += `<line x1="${r1(CX - at(y))}" x2="${r1(CX + at(y))}" y1="${y}" y2="${y}" stroke="${ln}" stroke-width="1" opacity=".55"/>`;
+    (t === 'jubilee' ? [.26, .62] : [k]).forEach(c => [-1, 1].forEach(s => {
+      o += `<line x1="${r1(CX + s * c * wd)}" y1="${y0}" x2="${r1(CX + s * c * we)}" y2="-10" stroke="${ln}" stroke-width="1" opacity=".6"/>`;
+    }));
+  }
+  return twice(o);
+}
+
+function lugs(w, fill) {
+  if (w.d.strap === 'integrated') return '';
+  const g = geo(w), rect = w.d.shape === 'rect', { wd } = strapGeo(w);
+  const lw = rect ? 14 : 16, ext = rect ? 18 : 22, ln = MAT[w.mat][3];
+  return [-1, 1].map(s => `<rect x="${s < 0 ? CX - wd - lw : CX + wd}" y="${CY - g.hh - ext}" width="${lw}" height="${2 * (g.hh + ext)}" rx="5" fill="${fill}" stroke="${ln}" stroke-width=".6"/>`).join('');
+}
+
+function caseEl(w, attr) {
+  const g = geo(w);
+  const R = (hw, hh, rx) => `<rect x="${CX - hw}" y="${CY - hh}" width="${2 * hw}" height="${2 * hh}" rx="${rx}" ${attr}/>`;
+  if (!g.rx) return `<circle cx="${CX}" cy="${CY}" r="${g.hw}" ${attr}/>`;
+  return (w.d.shape === 'soft' ? R(g.hw + 11, 40, 9) : '') + R(g.hw, g.hh, g.rx);
+}
+
+function dialShape(w, grow, attr) {
+  const g = geo(w);
+  return g.dw
+    ? `<rect x="${CX - g.dw - grow}" y="${CY - g.dh - grow}" width="${2 * (g.dw + grow)}" height="${2 * (g.dh + grow)}" rx="${g.drx + grow}" ${attr}/>`
+    : `<circle cx="${CX}" cy="${CY}" r="${g.rd + grow}" ${attr}/>`;
+}
+
+function crownEl(w) {
+  const g = geo(w), [, m, , ln] = MAT[w.mat], x = CX + g.hw - 2;
+  let o = '';
+  if (w.d.shape === 'cushion') {
+    o += `<path d="M${x} ${CY - 44}h12a20 20 0 0 1 20 20v48a20 20 0 0 1-20 20h-12Z" fill="url(#mt)" stroke="${ln}" stroke-width=".8"/>`;
+    o += `<rect x="${x + 6}" y="${CY - 13}" width="12" height="26" rx="3" fill="${m}" stroke="${ln}" stroke-width=".7"/>`;
+    o += `<line x1="${x + 26}" y1="${CY - 20}" x2="${x + 26}" y2="${CY + 26}" stroke="${ln}" stroke-width="3" stroke-linecap="round"/>`;
+  } else {
+    o += `<rect x="${x}" y="${CY - 12}" width="16" height="24" rx="3" fill="url(#mt)" stroke="${ln}" stroke-width=".8"/>`;
+    [-6, -2, 2, 6].forEach(k => { o += `<line x1="${x + 3}" x2="${x + 15}" y1="${CY + k}" y2="${CY + k}" stroke="${ln}" stroke-width=".7" opacity=".7"/>`; });
+    if (w.d.cab) o += `<circle cx="${x + 17}" cy="${CY}" r="5" fill="#1F3A8A"/>`;
+  }
+  if (w.d.chrono) [60, 120].forEach(a => {
+    o += `<rect x="${CX + g.hw - 4}" y="${CY - 8}" width="16" height="16" rx="2.5" fill="url(#mt)" stroke="${ln}" stroke-width=".8" transform="rotate(${a - 90} ${CX} ${CY})"/>`;
+  });
+  return o;
+}
+
+function bezelEl(w) {
+  const g = geo(w), d = w.d, [l, , dk, ln] = MAT[w.mat], R = g.hw;
+  const bc = d.bc || '#15161A', mk = d.bm || '#E8E8E4';
+  const T = (a, r, s, fs) => `<text x="${CX}" y="${r1(CY - r)}" text-anchor="middle" font-size="${fs}" font-weight="500" fill="${mk}" ${SANS} transform="rotate(${a} ${CX} ${CY})">${s}</text>`;
+  const screw = (x, y, a) => `<circle cx="${x}" cy="${y}" r="6" fill="${l}" stroke="${ln}" stroke-width=".8"/><line x1="${x - 4}" y1="${y}" x2="${x + 4}" y2="${y}" stroke="${dk}" stroke-width="1.4" transform="rotate(${a} ${x} ${y})"/>`;
+  const ring = 'fill="url(#mb)" stroke="' + ln + '" stroke-width=".8"';
+  let o = '';
+  if (d.shape === 'oct') {
+    o += `<polygon points="${Array.from({ length: 8 }, (_, i) => pol(22.5 + 45 * i, 124).join(',')).join(' ')}" ${ring} stroke-linejoin="round"/>`;
+    for (let i = 0; i < 8; i++) { const [x, y] = pol(45 * i, 103); o += screw(x, y, 45 * i); }
+  } else if (d.shape === 'square') {
+    o += `<rect x="${CX - R + 5}" y="${CY - R + 5}" width="${2 * R - 10}" height="${2 * R - 10}" rx="30" ${ring}/>`;
+    [[-44, -97], [44, -97], [-44, 97], [44, 97], [-97, -44], [-97, 44], [97, -44], [97, 44]].forEach(([x, y]) => { o += screw(CX + x, CY + y, 35); });
+  } else if (d.shape === 'soft') {
+    o += `<rect x="${CX - R + 7}" y="${CY - g.hh + 7}" width="${2 * R - 14}" height="${2 * g.hh - 14}" rx="63" ${ring}/>`;
+  } else if (d.shape === 'rect') {
+    if (d.gad) [-1, 1].forEach(s => [96, 101, 106].forEach(y => { o += `<line x1="${CX - R + 5}" x2="${CX + R - 5}" y1="${CY + s * y}" y2="${CY + s * y}" stroke="${ln}" stroke-width="1"/>`; }));
+    else [-1, 1].forEach(s => { o += `<line x1="${CX + s * (R - 13)}" x2="${CX + s * (R - 13)}" y1="${CY - g.hh - 12}" y2="${CY + g.hh + 12}" stroke="${ln}" stroke-width=".8"/>`; });
+  } else if (d.shape === 'cushion') {
+    o += `<circle cx="${CX}" cy="${CY}" r="110" ${ring}/>`;
+  } else if (['dive', 'tachy', 'gmt'].includes(d.bezel)) {
+    o += `<circle cx="${CX}" cy="${CY}" r="${R - 3.5}" fill="${bc}"/>`;
+    if (d.bezel === 'gmt') o += `<path d="M${CX - R + 3.5} ${CY}A${R - 3.5} ${R - 3.5} 0 0 0 ${CX + R - 3.5} ${CY}Z" fill="${d.bc2}"/>`;
+    if (d.bezel !== 'tachy') o += `<polygon points="${pol(-5.5, R - 7).join(',')} ${pol(5.5, R - 7).join(',')} ${pol(0, R - 21).join(',')}" fill="${mk}"/>`;
+    if (d.bezel === 'dive') {
+      for (let i = 1; i < 60; i++) {
+        if (i % 10 === 0) o += T(6 * i, R - 19.5, i, 12);
+        else if (i % 5 === 0) o += radial(6 * i, R - 8, R - 20, 3, mk);
+        else if (i < 15) o += radial(6 * i, R - 10, R - 16, 1.3, mk);
+      }
+    } else if (d.bezel === 'gmt') {
+      for (let h = 1; h < 24; h++) {
+        if (h % 2) { const [x, y] = pol(15 * h, R - 13); o += `<circle cx="${x}" cy="${y}" r="1.8" fill="${mk}"/>`; }
+        else o += T(15 * h, R - 18.5, h, 10.5);
+      }
+    } else {
+      [[72, 300], [90, 240], [108, 200], [120, 180], [135, 160], [154, 140], [180, 120], [216, 100], [240, 90], [270, 80], [309, 70], [332, 65], [0, 60]].forEach(([a, s]) => { o += T(a, R - 17, s, 8.5); });
+      [...'TACHYMETRE'].forEach((c, i) => { o += T(14 + i * 3.6, R - 16.5, c, 6.5); });
+    }
+  } else if (d.bezel === 'fluted') {
+    for (let i = 0; i < 120; i++) o += radial(3 * i, g.rd + 4, R - 2, 2.6, i % 2 ? dk : l, .8);
+  } else {
+    o += `<circle cx="${CX}" cy="${CY}" r="${R - 5}" fill="none" stroke="${ln}" stroke-width=".7" opacity=".7"/>`;
+    if (d.bezel === 'notch') for (let i = 0; i < 6; i++) o += radial(60 * i + 30, R - 1, R - 9, 16, dk, .9);
+  }
+  return o + dialShape(w, 3, `fill="${mix(dk, '#000000', .4)}"`);
+}
+
+// Циферблат, стрелки, задняя крышка, ракурсы и сборка SVG.
+function wDefs(w) {
+  const [l, m, dk] = MAT[w.mat], dc = w.d.dial;
+  return '<defs>' +
+    `<linearGradient id="mt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${l}"/><stop offset=".42" stop-color="${m}"/><stop offset=".58" stop-color="${l}"/><stop offset="1" stop-color="${dk}"/></linearGradient>` +
+    `<linearGradient id="mb" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${dk}"/><stop offset=".18" stop-color="${m}"/><stop offset=".5" stop-color="${l}"/><stop offset=".82" stop-color="${m}"/><stop offset="1" stop-color="${dk}"/></linearGradient>` +
+    `<radialGradient id="dl" cx=".32" cy=".28" r=".95"><stop offset="0" stop-color="${mix(dc, '#ffffff', lum(dc) < 120 ? .16 : .5)}"/><stop offset="1" stop-color="${dc}"/></radialGradient>` +
+    `<clipPath id="dc">${dialShape(w, 0, '')}</clipPath></defs>`;
+}
+
+function dialFace(w, live) {
+  const g = geo(w), d = w.d, rd = g.rd, k = rd / 95, subs = d.subs;
+  const dark = lum(d.dial) < 120, ink = d.ink || (dark ? '#F2F0EA' : '#1B1B1B');
+  const hm = MAT[d.hm || w.mat], lume = d.lume || LUME;
+  const E = a => edge(g, a);
+  const txt = (x, y, s, fs, extra = '', fill = ink, font = SANS) =>
+    `<text x="${r1(x)}" y="${r1(y)}" text-anchor="middle" font-size="${r1(fs)}" fill="${fill}" ${font} ${extra}>${s}</text>`;
+  let o = dialShape(w, 0, 'fill="url(#dl)"');
+
+  if (d.tex) {
+    const st = d.tex === 'grid' ? 7 : 9;
+    o += `<g clip-path="url(#dc)" stroke="${dark ? '#ffffff' : '#000000'}" stroke-opacity=".09" stroke-width="1.2">`;
+    for (let y = CY - 108; y <= CY + 108; y += st) o += `<line x1="${CX - 112}" x2="${CX + 112}" y1="${y}" y2="${y}"/>`;
+    if (d.tex === 'grid') for (let x = CX - 105; x <= CX + 105; x += st) o += `<line x1="${x}" x2="${x}" y1="${CY - 112}" y2="${CY + 112}"/>`;
+    o += '</g>';
+  }
+
+  if (!g.dw) { for (let i = 0; i < 60; i++) if (i % 5) o += radial(6 * i, rd - 3, rd - 8, .8, ink, .55); }
+  else if (d.shape !== 'soft') {
+    o += [0, 3.5].map(q => `<rect x="${CX - g.dw / 2 + q}" y="${CY - g.dh / 2 + q}" width="${g.dw - 2 * q}" height="${g.dh - 2 * q}" fill="none" stroke="${ink}" stroke-width=".7" opacity=".6"/>`).join('');
+  }
+
+  const ROM = ['XII', 'I', 'II', 'III', 'IIII', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
+  const skip = [d.date === 3 ? 3 : -1, d.date === 6 ? 6 : -1, d.day ? 0 : -1];
+  const bar = (a, e, wd, fill = lume, st = hm[2], f1 = .93, f2 = .73) =>
+    `<rect x="${r1(CX - wd / 2)}" y="${r1(CY - e * f1)}" width="${r1(wd)}" height="${r1(e * (f1 - f2))}" rx="1" fill="${fill}" stroke="${st}" stroke-width=".9" transform="rotate(${a} ${CX} ${CY})"/>`;
+  const tri = e => `<polygon points="${r1(CX - 11 * k)},${r1(CY - e * .93)} ${r1(CX + 11 * k)},${r1(CY - e * .93)} ${CX},${r1(CY - e * .71)}" fill="${lume}" stroke="${hm[2]}" stroke-width=".9"/>`;
+  for (let i = 0; i < 12; i++) {
+    if (skip.includes(i)) continue;
+    const a = 30 * i, e = E(a), q = i % 3 === 0;
+    if (d.idx === 'dots') {
+      const [x, y] = pol(a, e * .83);
+      if (!i) o += tri(e);
+      else if (q) o += bar(a, e, 9 * k);
+      else if (d.sq) o += `<rect x="${x - 6.5}" y="${y - 6.5}" width="13" height="13" fill="${lume}" stroke="${hm[2]}" stroke-width=".9" transform="rotate(${a} ${x} ${y})"/>`;
+      else o += `<circle cx="${x}" cy="${y}" r="${r1(7.5 * k)}" fill="${lume}" stroke="${hm[2]}" stroke-width=".9"/>`;
+    } else if (d.idx === 'roman') {
+      o += txt(CX, CY - e * .68, ROM[i], d.shape === 'rect' ? 17 : 21, `transform="rotate(${a} ${CX} ${CY})"`, ink, 'font-family="Times New Roman,Times,serif"');
+    } else if (d.idx === 'arabic') {
+      const [x, y] = pol(a, e * .8), fs = g.dw ? 14 : 17 * k;
+      o += txt(x, y + fs * .36, i || 12, fs);
+    } else if (d.idx === 'explorer') {
+      const [x, y] = pol(a, e * .78);
+      o += !i ? tri(e) : q ? txt(x, y + 9.5, i, 27, 'font-weight="500"', lume) : bar(a, e, 6);
+    } else if (d.idx === 'sandwich') {
+      const [x, y] = pol(a, e * .74);
+      if (i === 0 || i === 6) o += txt(x, y + 11, i || 12, 31, 'font-weight="500"', lume);
+      else if (i !== 9) o += bar(a, e, 4.5, lume, 'none', .92, .72);
+    } else {
+      o += bar(a, e, (i ? (q ? 6.5 : 5) : 10) * k, dark ? hm[0] : hm[2], hm[3]);
+    }
+  }
+
+  const sig = w.brand.toUpperCase(), fs = Math.max(6.2, Math.min(rd * .1, rd * 1.45 / sig.length));
+  if (subs === 126) o += txt(CX + rd * .5, CY + 3, sig, 7.5, 'letter-spacing=".8"');
+  else o += txt(CX, CY - rd * (subs === 369 ? .5 : .4), sig, fs, 'letter-spacing="1.2"');
+  if ((!subs || subs === 9) && (!g.dw || d.shape === 'soft')) o += txt(CX, CY + rd * .44, w.model.toUpperCase(), Math.max(5, fs * .62), 'letter-spacing="1" opacity=".8"');
+
+  const win = (x, y, ww, s, f) => `<rect x="${r1(x - ww / 2)}" y="${r1(y - 8)}" width="${ww}" height="16" rx="1.5" fill="#FAFAF7" stroke="${hm[2]}" stroke-width="1"/>` +
+    `<text x="${r1(x)}" y="${r1(y + f * .37)}" text-anchor="middle" font-size="${f}" font-weight="600" fill="#111111" ${SANS}>${s}</text>`;
+  if (d.date === 3) o += win(CX + E(90) * .68, CY, 22, 28, 12);
+  if (d.date === 6) o += win(CX, CY + E(180) * .68, 22, 28, 12);
+  if (d.day) o += win(CX, CY - rd * .8, 54, 'MONDAY', 8.5);
+
+  const hf = d.hc || (dark ? hm[0] : hm[1]), hs = d.hc ? mix(d.hc, '#000000', .35) : (dark ? hm[2] : hm[3]);
+  const SUBS = { 369: [[.47, 0], [0, .47], [-.47, 0]], 126: [[0, -.47], [0, .47]], 9: [[-.47, 0]], 6: [[0, .48]] };
+  (SUBS[subs] || []).forEach(([dx, dy], j) => {
+    const x = r1(CX + dx * rd), y = r1(CY + dy * rd), r = rd * (subs === 369 ? .2 : .23);
+    o += `<circle cx="${x}" cy="${y}" r="${r1(r)}" fill="${mix(d.dial, dark ? '#ffffff' : '#000000', .05)}" stroke="${d.sr || ink}" stroke-width="${d.sr ? r1(4 * k) : .8}" stroke-opacity="${d.sr ? 1 : .4}"/>`;
+    for (let i = 0; i < 12; i++) {
+      const t = i * Math.PI / 6, sx = Math.sin(t), cy = Math.cos(t);
+      o += `<line x1="${r1(x + r * .66 * sx)}" y1="${r1(y - r * .66 * cy)}" x2="${r1(x + r * .82 * sx)}" y2="${r1(y - r * .82 * cy)}" stroke="${ink}" stroke-width=".7" opacity=".7"/>`;
+    }
+    const t = [.8, 3.6, 5.3][j];
+    o += `<line x1="${x}" y1="${y}" x2="${r1(x + r * .7 * Math.sin(t))}" y2="${r1(y - r * .7 * Math.cos(t))}" stroke="${hf}" stroke-width="1.1"/><circle cx="${x}" cy="${y}" r="1.6" fill="${hf}"/>`;
+  });
+
+  const thin = d.hands === 'sword' || d.hands === 'leaf';
+  const hand = (len, a, wd, hour) => {
+    const y = r1(CY - len), mid = r1(CY - len * (d.hands === 'leaf' ? .45 : .2)), tail = r1(CY + 10 * k);
+    let s;
+    if (d.hands === 'sword') s = `<polygon points="${CX},${y} ${r1(CX + wd)},${mid} ${CX},${tail} ${r1(CX - wd)},${mid}" fill="${hf}" stroke="${hs}" stroke-width=".7"/>`;
+    else if (d.hands === 'leaf') s = `<path d="M${CX} ${tail}Q${r1(CX + wd * 1.7)} ${mid} ${CX} ${y}Q${r1(CX - wd * 1.7)} ${mid} ${CX} ${tail}Z" fill="${hf}" stroke="${hs}" stroke-width=".6"/>`;
+    else {
+      s = `<rect x="${r1(CX - wd / 2)}" y="${y}" width="${r1(wd)}" height="${r1(len + 12 * k)}" rx="1.5" fill="${hf}" stroke="${hs}" stroke-width=".7"/>` +
+        `<rect x="${r1(CX - wd / 2 + 1.7)}" y="${r1(y + 3)}" width="${r1(wd - 3.4)}" height="${r1(len * .6)}" fill="${lume}"/>`;
+      if (hour && d.hands === 'mercedes') s += `<circle cx="${CX}" cy="${r1(y + 15)}" r="8.5" fill="${lume}" stroke="${hf}" stroke-width="2.2"/>`;
+      if (hour && d.hands === 'snow') s += `<rect x="${CX - 8}" y="${r1(y + 5)}" width="16" height="16" fill="${lume}" stroke="${hf}" stroke-width="2" transform="rotate(45 ${CX} ${r1(y + 13)})"/>`;
+    }
+    return `<g transform="rotate(${a} ${CX} ${CY})">${s}</g>`;
+  };
+  if (d.gmt) o += `<g transform="rotate(142 ${CX} ${CY})"><line x1="${CX}" y1="${CY}" x2="${CX}" y2="${r1(CY - rd * .8)}" stroke="#B3262E" stroke-width="1.6"/><polygon points="${CX},${r1(CY - rd * .93)} ${CX + 6},${r1(CY - rd * .78)} ${CX - 6},${r1(CY - rd * .78)}" fill="#B3262E"/></g>`;
+  o += hand(rd * .54, 305, (thin ? 5.5 : 7) * k, 1) + hand(rd * .84, 60, (thin ? 4.6 : 5.6) * k);
+
+  if (subs !== 9 && subs !== 6) {
+    const a0 = d.chrono ? 0 : 210, sc = d.sec || hf;
+    o += `<g transform="rotate(${a0} ${CX} ${CY})"><line x1="${CX}" y1="${r1(CY + rd * .24)}" x2="${CX}" y2="${r1(CY - rd * .9)}" stroke="${sc}" stroke-width="1.3"/>` +
+      (d.chrono ? '' : `<circle cx="${CX}" cy="${r1(CY - rd * .6)}" r="${r1(3.4 * k)}" fill="${lume}" stroke="${sc}" stroke-width="1"/>`) +
+      (live && !d.chrono ? `<animateTransform attributeName="transform" type="rotate" from="${a0} ${CX} ${CY}" to="${a0 + 360} ${CX} ${CY}" dur="60s" repeatCount="indefinite"/>` : '') + '</g>';
+  }
+  o += `<circle cx="${CX}" cy="${CY}" r="${r1(5 * k)}" fill="${hf}" stroke="${hs}" stroke-width=".8"/>`;
+  o += `<path clip-path="url(#dc)" d="M${CX - 130} ${CY - 20}L${CX + 10} ${CY - 130}H${CX + 60}L${CX - 130} ${CY + 50}Z" fill="#ffffff" opacity=".06"/>`;
+  return o;
+}
+
+function frontCase(w, live, noCrown) {
+  return lugs(w, 'url(#mt)') + (noCrown ? '' : crownEl(w)) + caseEl(w, `fill="url(#mt)" stroke="${MAT[w.mat][3]}" stroke-width=".8"`) + bezelEl(w) + dialFace(w, live);
+}
+
+function backCase(w) {
+  const g = geo(w), d = w.d, [l, , dk, ln] = MAT[w.mat];
+  let o = lugs(w, 'url(#mt)') + caseEl(w, `fill="url(#mt)" stroke="${ln}" stroke-width=".8"`);
+  if (d.shape === 'rect') {
+    const T = (y, s, fs) => `<text x="${CX}" y="${y}" text-anchor="middle" font-size="${fs}" letter-spacing="1.4" fill="${ln}" ${SANS}>${s}</text>`;
+    o += `<rect x="${CX - g.dw}" y="${CY - g.dh}" width="${2 * g.dw}" height="${2 * g.dh}" rx="4" fill="url(#mb)" stroke="${ln}" stroke-width=".8"/>`;
+    [-1, 1].forEach(sx => [-1, 1].forEach(sy => { o += `<circle cx="${CX + sx * (g.dw - 9)}" cy="${CY + sy * (g.dh - 9)}" r="3.2" fill="${l}" stroke="${ln}" stroke-width=".6"/>`; }));
+    return o + T(CY - 14, w.brand.toUpperCase(), 6.2) + T(CY + 2, w.ref, 6) + T(CY + 16, w.wr + ' M', 6);
+  }
+  const R = Math.min(g.hw, g.hh) - 14, ri = R - 27, rt = R - 20;
+  const label = `${w.brand} · ${w.model} · Ref. ${w.ref} · ${w.wr} m · `.toUpperCase();
+  o += `<circle cx="${CX}" cy="${CY}" r="${R}" fill="url(#mb)" stroke="${ln}" stroke-width=".8"/>`;
+  for (let i = 0; i < 12; i++) o += radial(30 * i + 15, R - 1, R - 7, 5, dk, .8);
+  o += `<path id="tp" d="M${CX - rt} ${CY}a${rt} ${rt} 0 1 1 ${2 * rt} 0a${rt} ${rt} 0 1 1 ${-2 * rt} 0" fill="none"/>`;
+  o += `<text font-size="8" letter-spacing="${r1(Math.max(.5, (2 * Math.PI * rt - 6) / label.length - 5.6))}" fill="${ln}" ${SANS}><textPath href="#tp">${label}</textPath></text>`;
+  if (!d.open) {
+    o += `<circle cx="${CX}" cy="${CY}" r="${ri}" fill="url(#mt)" stroke="${ln}" stroke-width=".8"/>`;
+    [.8, .6, .4, .2].forEach(f => { o += `<circle cx="${CX}" cy="${CY}" r="${r1(ri * f)}" fill="none" stroke="${ln}" stroke-width=".5" opacity=".5"/>`; });
+    return o;
+  }
+  const gold = MAT[d.rotor || (w.mat === 'rose' ? 'rose' : 'gold')];
+  o += `<circle cx="${CX}" cy="${CY}" r="${ri}" fill="#1E1E20"/><clipPath id="mc"><circle cx="${CX}" cy="${CY}" r="${ri - 3}"/></clipPath><g clip-path="url(#mc)">`;
+  o += `<rect x="${CX - ri}" y="${CY - ri}" width="${2 * ri}" height="${2 * ri}" fill="${MAT.steel[1]}"/>`;
+  for (let x = CX - ri; x < CX + ri; x += 9) o += `<rect x="${x}" y="${CY - ri}" width="4.5" height="${2 * ri}" fill="#ffffff" opacity=".3"/>`;
+  o += `<path d="M${CX - ri} ${CY + 14}Q${CX - 8} ${CY - 10} ${CX + ri} ${CY + 34}" fill="none" stroke="#1E1E20" stroke-width="3"/>`;
+  o += `<path d="M${CX + 6} ${CY + 4}Q${CX + 2} ${CY + 40} ${CX + 26} ${CY + ri}" fill="none" stroke="#1E1E20" stroke-width="3"/>`;
+  o += `<circle cx="${CX - 34}" cy="${CY + 42}" r="21" fill="#1E1E20"/><circle cx="${CX - 34}" cy="${CY + 42}" r="16" fill="none" stroke="${gold[1]}" stroke-width="3"/>`;
+  o += `<line x1="${CX - 50}" y1="${CY + 42}" x2="${CX - 18}" y2="${CY + 42}" stroke="${gold[1]}" stroke-width="2"/>`;
+  [[34, 44], [52, 12], [-58, 8], [14, 60]].forEach(([x, y]) => { o += `<circle cx="${CX + x}" cy="${CY + y}" r="4.6" fill="${gold[1]}"/><circle cx="${CX + x}" cy="${CY + y}" r="2.6" fill="#B3263A"/>`; });
+  if (w.mov === 'Автоматический') {
+    o += `<path d="M${CX - ri + 5} ${CY}A${ri - 5} ${ri - 5} 0 0 1 ${CX + ri - 5} ${CY}L${CX + 15} ${CY}A15 15 0 0 0 ${CX - 15} ${CY}Z" fill="${gold[1]}" stroke="${gold[3]}" stroke-width=".8" transform="rotate(24 ${CX} ${CY})"/>`;
+    o += `<path d="M${CX - ri + 12} ${CY}A${ri - 12} ${ri - 12} 0 0 1 ${CX + ri - 12} ${CY}" fill="none" stroke="${gold[0]}" stroke-width="6" opacity=".55" transform="rotate(24 ${CX} ${CY})"/>`;
+  } else {
+    [[-20, -34], [30, -40], [-48, -14]].forEach(([x, y]) => { o += `<circle cx="${CX + x}" cy="${CY + y}" r="4.6" fill="${gold[1]}"/><circle cx="${CX + x}" cy="${CY + y}" r="2.6" fill="#B3263A"/>`; });
+    o += `<path d="M${CX - ri} ${CY - 22}Q${CX} ${CY - 2} ${CX + ri} ${CY - 30}" fill="none" stroke="#1E1E20" stroke-width="3"/>`;
+  }
+  o += `<circle cx="${CX}" cy="${CY}" r="6" fill="${MAT.steel[0]}" stroke="${MAT.steel[3]}" stroke-width=".8"/></g>`;
+  return o + `<circle cx="${CX}" cy="${CY}" r="${ri}" fill="none" stroke="${ln}" stroke-width="2"/>`;
+}
+
+// Поворот вокруг вертикальной оси: 0° — циферблат, 180° — задняя крышка
+function turnView(w, deg) {
+  const th = deg * Math.PI / 180, c = Math.cos(th), s = Math.sin(th), ac = Math.max(Math.abs(c), .02);
+  const g = geo(w), [l, m, dk, ln] = MAT[w.mat], face = c >= 0, ns = face ? 1 : -1;
+  const at = (off, inner) => `<g transform="translate(${r1(CX + off)} 0) scale(${ac.toFixed(3)} 1) translate(${-CX} 0)">${inner}</g>`;
+  const sweep = (fn, T) => { let o = ''; for (let i = 0; i <= 8; i++) o += at(ns * s * T * (i / 8 - .5), fn(w, mix(dk, m, i / 8))); return o; };
+  const xa = CX + g.hw * c, xb = CX + (g.hw + 15) * c;
+  const crown = `<rect x="${r1(Math.min(xa, xb))}" y="${CY - 12}" width="${r1(Math.abs(xb - xa) + 1)}" height="24" fill="${m}" stroke="${ln}" stroke-width=".6"/>` +
+    `<ellipse cx="${r1(xb)}" cy="${CY}" rx="${r1(Math.max(12 * Math.abs(s), 1))}" ry="12" fill="${s < 0 ? l : dk}" stroke="${ln}" stroke-width=".7"/>`;
+  return (s >= 0 ? crown : '') +
+    sweep(strapSil, 7) + at(ns * s * 3.5, strapEl(w, !face)) +
+    sweep((x, f) => lugs(x, f) + caseEl(x, `fill="${f}"`), 30) + at(ns * s * 15, face ? frontCase(w, 0, 1) : backCase(w)) +
+    (s < 0 ? crown : '');
+}
+
+const WRIST = [
+  { bg: '#E6E2DA', skin: '#E0B99F', sl: '#24272C' },
+  { bg: '#D5DADD', skin: '#C99B7A', sl: '#EEECE7' },
+  { bg: '#CFC7BA', skin: '#8E6549', sl: '#3C4A40' },
+  { bg: '#2A2A2C', skin: '#EBC7AE', sl: '#7B5E46' },
+  { bg: '#DCD6CC', skin: '#D4A788', sl: '#5B6B7C' },
+];
+function wristView(w, v, live) {
+  const p = WRIST[v % WRIST.length], sh = mix(p.skin, '#000000', .16);
+  const fit = inner => `<g transform="translate(${CX} ${CY}) scale(.62) translate(${-CX} ${-CY})">${inner}</g>`;
+  return `<rect x="-400" y="-400" width="1200" height="1300" fill="${p.bg}"/><g transform="rotate(-13 ${CX} ${CY})">` +
+    `<path d="M-300 152H330C380 136 430 126 700 118V392C430 380 380 366 330 350H-300Z" fill="${p.skin}"/>` +
+    `<path d="M-300 322H330C380 338 430 350 700 362V392C430 380 380 366 330 350H-300Z" fill="${sh}" opacity=".45"/>` +
+    `<rect x="-300" y="138" width="372" height="226" fill="${p.sl}"/><rect x="60" y="134" width="13" height="234" fill="${mix(p.sl, '#000000', .22)}"/>` +
+    `<clipPath id="wc"><rect x="-300" y="152" width="1000" height="198"/></clipPath>` +
+    `<g clip-path="url(#wc)">${fit(`<circle cx="${CX + 8}" cy="${CY + 10}" r="128" fill="${sh}" opacity=".5"/>` + strapEl(w))}</g>` +
+    fit(frontCase(w, live)) + '</g>';
+}
+
+const CROPS = { dial: '118 168 164 164', crown: '236 170 150 150', strap: '118 348 164 150', bezel: '128 96 150 150' };
+function watchSVG(w, view = 'front', deg = 0) {
+  let vb = '0 0 400 500', par = 'meet', body;
+  if (view === 'turn') body = turnView(w, deg);
+  else if (view === 'angle') body = turnView(w, -36);
+  else if (view === 'back') body = strapEl(w, 1) + `<g transform="translate(400 0) scale(-1 1)">${crownEl(w)}</g>` + backCase(w);
+  else if (view === 'film') { body = wristView(w, 3, 1); vb = '-150 80 700 340'; par = 'slice'; }
+  else if (view.startsWith('wrist')) { body = wristView(w, +view.slice(5) || 0); par = 'slice'; }
+  else {
+    body = strapEl(w) + frontCase(w, view === 'live');
+    if (CROPS[view]) { vb = CROPS[view]; par = 'slice'; }
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" preserveAspectRatio="xMidYMid ${par}">${wDefs(w)}${body}</svg>`;
+}
+
+const imgCache = {};
+function watchImg(w, view = 'front') {
+  if (w.photos && w.photos[view]) return w.photos[view];
+  const key = w.id + '|' + view;
+  return imgCache[key] || (imgCache[key] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(watchSVG(w, view)));
+}
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const rub = n => n.toLocaleString('ru-RU') + ' ₽';
+const byId = id => WATCHES.find(w => w.id === id);
+const sizeOf = w => w.sizeLabel || w.size + ' mm';
+const plural = (n, f) => f[n % 10 === 1 && n % 100 !== 11 ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2];
+const HEART = '<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.3-7-9.5A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.5C19 15.7 12 20 12 20z"/></svg>';
+
+const store = {
+  get(k) { try { return (JSON.parse(localStorage.getItem('smq-' + k)) || []).filter(byId); } catch (e) { return []; } },
+  set(k, v) { try { localStorage.setItem('smq-' + k, JSON.stringify(v)); } catch (e) { /* приватный режим */ } },
+};
+let cart = store.get('cart'), fav = store.get('fav');
+
+function syncCounts() {
+  $$('.cnt-cart').forEach(e => { e.textContent = cart.length || ''; });
+  $$('.cnt-fav').forEach(e => { e.textContent = fav.length || ''; });
+}
+
+function card(w) {
+  return `<article class="card">
+    <a class="ph" href="#/w/${w.id}"><img src="${watchImg(w)}" alt="${w.brand} ${w.model}" loading="lazy"><img class="alt" data-alt="${w.id}" alt="">${w.isNew ? '<span class="tag">Новинка</span>' : ''}</a>
+    <button class="fav${fav.includes(w.id) ? ' on' : ''}" data-fav="${w.id}" aria-label="В избранное">${HEART}</button>
+    <a class="meta" href="#/w/${w.id}"><b>${w.brand}</b><span>${w.model}</span><span class="muted">${w.year} · ${sizeOf(w)}</span><span class="price">${rub(w.price)}</span></a>
+  </article>`;
+}
+const cards = list => list.map(card).join('');
+
+const review = r => {
+  const w = byId(r.w);
+  return `<article class="rev"><div class="stars">★★★★★</div><p>${r.text}</p><footer>${r.name}, ${r.city} · ${r.date}<br>Покупка: <a href="#/w/${w.id}">${w.brand} ${w.model}</a></footer></article>`;
+};
+
+function toggleFav(id) {
+  fav = fav.includes(id) ? fav.filter(x => x !== id) : [...fav, id];
+  store.set('fav', fav);
+  syncCounts();
+  const on = fav.includes(id);
+  $$(`[data-fav="${id}"]`).forEach(b => {
+    b.classList.toggle('on', on);
+    if (b.classList.contains('btn')) b.textContent = on ? 'В избранном' : 'Добавить в избранное';
+  });
+  if (document.body.dataset.page === 'wishlist') route();
+}
+
+function addToCart(id) {
+  if (!cart.includes(id)) { cart.push(id); store.set('cart', cart); syncCounts(); }
+  openDrawer('cart');
+}
+function removeFromCart(id) {
+  cart = cart.filter(x => x !== id);
+  store.set('cart', cart);
+  syncCounts();
+  if (drawerType === 'cart') renderCart();
+  if (document.body.dataset.page === 'checkout') route();
+}
+
+/* drawer */
+let drawerType = null;
+function openDrawer(type, arg) {
+  $('#search').classList.remove('on');
+  drawerType = type;
+  if (type === 'cart') renderCart(); else renderFilters(arg);
+  $('#drawer').classList.add('on');
+  $('#drawer').setAttribute('aria-hidden', 'false');
+  $('.overlay').classList.add('on');
+  document.body.classList.add('lock');
+}
+function closeAll() {
+  $('#drawer').classList.remove('on');
+  $('#drawer').setAttribute('aria-hidden', 'true');
+  $('.overlay').classList.remove('on');
+  $('#search').classList.remove('on');
+  document.body.classList.remove('lock');
+  drawerType = null;
+}
+
+const cartItem = w => `<div class="ci"><a class="ph" href="#/w/${w.id}"><img src="${watchImg(w)}" alt=""></a>
+  <div><b>${w.brand}</b>${w.model}<br><span class="muted">Ref. ${w.ref} · ${w.year}</span><br><button data-rm="${w.id}">Удалить</button></div>
+  <span>${rub(w.price)}</span></div>`;
+const cartSum = () => cart.reduce((s, id) => s + byId(id).price, 0);
+
+function renderCart() {
+  const items = cart.map(byId);
+  $('#d-title').textContent = 'Корзина' + (items.length ? ' · ' + items.length : '');
+  $('#d-body').innerHTML = items.length
+    ? items.map(cartItem).join('') + `<div class="rows"><div class="row"><span>Товары</span><span>${rub(cartSum())}</span></div>
+      <div class="row"><span>Доставка · 1–2 дня, со страховкой</span><span>Бесплатно</span></div></div>`
+    : '<div class="d-empty"><p>В корзине пока пусто</p><a class="link" href="#/catalog">Перейти в каталог</a></div>';
+  $('#d-foot').innerHTML = items.length
+    ? `<div class="row total"><span>Итого</span><span>${rub(cartSum())}</span></div><a class="btn" href="#/checkout">Оформить заказ</a><p class="note">Без регистрации · возврат 14 дней</p>`
+    : '';
+}
+
+/* search */
+function openSearch() {
+  closeAll();
+  $('#search').classList.add('on');
+  document.body.classList.add('lock');
+  $('#q').value = '';
+  renderSearch('');
+  setTimeout(() => $('#q').focus(), 60);
+}
+function renderSearch(s) {
+  s = s.trim().toLowerCase();
+  const res = s ? WATCHES.filter(w => `${w.brand} ${w.model} ${w.ref}`.toLowerCase().includes(s)) : WATCHES.filter(w => w.pop);
+  const head = s ? (res.length ? `Найдено: ${res.length}` : 'Ничего не найдено') : 'Популярное';
+  $('#q-res').innerHTML = `<p class="over muted">${head}</p>` + res.map(w =>
+    `<a class="sr" href="#/w/${w.id}"><span class="ph"><img src="${watchImg(w)}" alt=""></span><span><b>${w.brand}</b><br>${w.model} <span class="muted">· ${w.ref}</span></span><span>${rub(w.price)}</span></a>`).join('');
+}
+
+/* главная */
+const UGC = [
+  ['gmt-master-ii', 3, '@alex.wristcheck'], ['santos', 1, '@marina.s', '0:14'], ['royal-oak', 4, '@igor_v'],
+  ['speedmaster', 2, '@moonwatch.dk', '0:21'], ['calatrava', 0, '@olga.n'], ['black-bay-58', 3, '@timur.a'],
+];
+
+function Home() {
+  const hero = byId('submariner-date'), story = byId('daytona');
+  const brandCount = b => WATCHES.filter(w => w.brand === b).length;
+  return `
+  <a class="hero" href="#/w/${hero.id}">
+    <div class="hero-img"><img src="${watchImg(hero, 'live')}" alt="${hero.brand} ${hero.model}"></div>
+    <span class="hero-top over">Новое поступление</span>
+    <div class="hero-txt"><h1>Rolex Submariner</h1><p>${hero.year} · ${sizeOf(hero)}</p><p class="p">${rub(hero.price)}</p><span class="btn auto">Смотреть</span></div>
+  </a>
+
+  <section class="sec">
+    <div class="sec-h"><h2>Новые поступления</h2><div class="arrows"><button data-scroll="-1" aria-label="Назад">←</button><button data-scroll="1" aria-label="Вперёд">→</button></div></div>
+    <div class="scroller" id="fresh">${cards(WATCHES.filter(w => w.isNew))}</div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>Популярные модели</h2><a class="link" href="#/catalog">Весь каталог</a></div>
+    <div class="grid">${cards(WATCHES.filter(w => w.pop).slice(0, 8))}</div>
+  </section>
+
+  <section class="ed">
+    <div class="ed-media"><img src="${watchImg(story, 'film')}" alt=""></div>
+    <div class="ed-txt"><span class="over">Журнал · видео</span><h2>Хронограф, который стал легендой</h2>
+      <p>Почему за Daytona стоят в очереди годами и чем нынешний референс отличается от предыдущего. Коротко и на запястье.</p>
+      <a class="link" href="#/w/${story.id}">Смотреть модель</a></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>Бренды</h2><a class="link" href="#/brands">Все бренды</a></div>
+    <div class="brands">${BRANDS.slice(0, 8).map(b => `<a href="#/catalog?brand=${encodeURIComponent(b)}">${b}<i>${brandCount(b)}</i></a>`).join('')}</div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>Отзывы покупателей</h2><span class="muted">★ 4.9 / 5 · 214 отзывов</span></div>
+    <div class="revs">${REVIEWS.slice(0, 3).map(review).join('')}</div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>На запястье</h2><span class="muted">@smqtime</span></div>
+    <div class="ugc">${UGC.map(([id, v, who, video]) => `<a href="#/w/${id}"><img src="${watchImg(byId(id), 'wrist' + v)}" alt="" loading="lazy">${video ? `<i class="badge tr">▶ ${video}</i>` : ''}<span>${who}</span></a>`).join('')}</div>
+  </section>`;
+}
+
+/* каталог */
+const FILTERS = [
+  { key: 'brand', title: 'Бренд', opts: BRANDS.map(b => [b, b]), test: (w, v) => w.brand === v },
+  { key: 'price', title: 'Цена', opts: [['a', 'до 500 000 ₽'], ['b', '500 000 – 1 000 000 ₽'], ['c', '1 000 000 – 3 000 000 ₽'], ['d', 'от 3 000 000 ₽']],
+    test: (w, v) => ({ a: w.price < 5e5, b: w.price >= 5e5 && w.price < 1e6, c: w.price >= 1e6 && w.price < 3e6, d: w.price >= 3e6 })[v] },
+  { key: 'size', title: 'Размер', opts: [['s', 'до 37 mm'], ['m', '38–40 mm'], ['l', '41–42 mm'], ['xl', 'от 43 mm']],
+    test: (w, v) => ({ s: w.size < 38, m: w.size >= 38 && w.size < 41, l: w.size >= 41 && w.size < 43, xl: w.size >= 43 })[v] },
+  { key: 'year', title: 'Год', opts: [['2025', '2025'], ['2024', '2024'], ['2023', '2023'], ['old', '2022 и ранее']],
+    test: (w, v) => (v === 'old' ? w.year <= 2022 : w.year === +v) },
+  { key: 'cond', title: 'Состояние', opts: ['Новые', 'Отличное', 'Очень хорошее'].map(c => [c, c]), test: (w, v) => w.cond === v },
+  { key: 'mat', title: 'Материал', opts: Object.entries(MATS), test: (w, v) => w.mat === v },
+];
+const F = {};
+let onlyNew = false, sortBy = 'new';
+const resetFilters = () => FILTERS.forEach(f => { F[f.key] = []; });
+resetFilters();
+
+const matches = (w, except) => (!onlyNew || w.isNew) &&
+  FILTERS.every(f => f.key === except || !F[f.key].length || F[f.key].some(v => f.test(w, v)));
+function filtered() {
+  const cmp = {
+    new: (a, b) => (b.isNew || 0) - (a.isNew || 0) || b.year - a.year,
+    asc: (a, b) => a.price - b.price,
+    desc: (a, b) => b.price - a.price,
+  }[sortBy];
+  return WATCHES.filter(w => matches(w)).sort(cmp);
+}
+
+function Catalog(q) {
+  if ('brand' in q || 'new' in q) {
+    resetFilters();
+    if (BRANDS.includes(q.brand)) F.brand = [q.brand];
+  }
+  onlyNew = 'new' in q;
+  return `<div class="cat-h"><h1 id="cat-t"></h1><p id="cat-n"></p></div>
+  <div class="bar">
+    <div class="f-row">${FILTERS.map(f => `<button data-filter="${f.key}">${f.title}<sup></sup></button>`).join('')}</div>
+    <select class="sort" id="sort" aria-label="Сортировка"><option value="new">Сначала новинки</option><option value="asc">Сначала дешевле</option><option value="desc">Сначала дороже</option></select>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="cat-grid"><div class="grid" id="grid" style="grid-auto-flow:row dense"></div></div>`;
+}
+
+function renderCatalog() {
+  if (!$('#grid')) return;
+  const list = filtered(), active = FILTERS.some(f => F[f.key].length);
+  $('#cat-t').textContent = onlyNew ? 'Новинки' : F.brand.length === 1 ? F.brand[0] : 'Часы';
+  $('#cat-n').textContent = `${list.length} ${plural(list.length, ['модель', 'модели', 'моделей'])} в наличии`;
+  $('#sort').value = sortBy;
+  $$('[data-filter]').forEach(b => { $('sup', b).textContent = F[b.dataset.filter].length || ''; });
+  $('#chips').innerHTML = FILTERS.flatMap(f => F[f.key].map(v =>
+    `<button class="chip" data-chip="${f.key}|${v}">${f.opts.find(o => o[0] === v)[1]} <span>×</span></button>`)).join('') +
+    (active ? '<button class="chip clear" data-act="reset">Сбросить всё</button>' : '');
+  const story = byId('royal-oak');
+  const banner = `<a class="banner" href="#/w/${story.id}"><span class="ph"><img src="${watchImg(story, 'dial')}" alt="" loading="lazy"></span>
+    <div><span class="over">Журнал</span><h3>Интегрированный браслет: три иконы семидесятых</h3>
+    <p>Royal Oak, Nautilus и Overseas — как стальные спортивные часы стали дороже золотых.</p><span class="link">Смотреть Royal Oak</span></div></a>`;
+  $('#grid').innerHTML = list.length
+    ? list.map((w, i) => (i === 8 && !active && !onlyNew ? banner : '') + card(w)).join('')
+    : '<div class="empty"><p>По этим фильтрам ничего нет</p><button class="link" data-act="reset">Сбросить фильтры</button></div>';
+}
+
+function renderFilters(focusKey) {
+  const body = $('#d-body'), top = body.scrollTop;
+  $('#d-title').textContent = 'Фильтры';
+  body.innerHTML = FILTERS.map(f => `<section class="fg" data-g="${f.key}"><h4>${f.title}</h4>${f.opts.map(([v, label]) => {
+    const n = WATCHES.filter(w => matches(w, f.key) && f.test(w, v)).length;
+    return `<label class="opt"><input type="checkbox" data-f="${f.key}" value="${v}"${F[f.key].includes(v) ? ' checked' : ''}><span>${label}</span><i>${n}</i></label>`;
+  }).join('')}</section>`).join('');
+  const n = filtered().length;
+  $('#d-foot').innerHTML = `<div class="two"><button class="btn ghost" data-act="reset">Сбросить</button><button class="btn" data-act="close">Показать ${n}</button></div>`;
+  if (focusKey) body.scrollTop = $(`[data-g="${focusKey}"]`, body).offsetTop - body.offsetTop;
+  else body.scrollTop = top;
+}
+
+function setFilter(key, value, on) {
+  F[key] = on ? [...new Set([...F[key], value])] : F[key].filter(v => v !== value);
+  renderCatalog();
+  if (drawerType === 'filters') renderFilters();
+}
+
+/* бренды, избранное */
+function Brands() {
+  return `<div class="cat-h"><h1>Бренды</h1><p>${BRANDS.length} мануфактур в наличии</p></div>
+  <div class="blist">${BRANDS.map(b => {
+    const n = WATCHES.filter(w => w.brand === b).length;
+    return `<a href="#/catalog?brand=${encodeURIComponent(b)}">${b}<i>${n} ${plural(n, ['модель', 'модели', 'моделей'])}</i></a>`;
+  }).join('')}</div>`;
+}
+
+function Wishlist() {
+  const list = fav.map(byId);
+  return `<div class="cat-h"><h1>Избранное</h1><p>${list.length ? `${list.length} ${plural(list.length, ['модель', 'модели', 'моделей'])}` : 'Пока пусто'}</p></div>
+  <div class="cat-grid"><div class="grid">${list.length ? cards(list)
+    : '<div class="empty"><p>Здесь появятся часы, которые вы отметите сердцем</p><a class="link" href="#/catalog">Перейти в каталог</a></div>'}</div></div>`;
+}
+
+/* карточка часов */
+const GRADES = ['Новые', 'Отличное', 'Очень хорошее', 'Хорошее'];
+const COND_NOTE = {
+  'Новые': 'Часы не носились. Заводские плёнки на месте, следов эксплуатации нет.',
+  'Отличное': 'Носились аккуратно и недолго. Микроцарапины видны только под лупой.',
+  'Очень хорошее': 'Лёгкие следы носки на браслете и застёжке. Корпус не полировался.',
+};
+const MAT_GEN = { steel: 'стали', gold: 'жёлтого золота', rose: 'розового золота', titan: 'титана' };
+
+function Product(w) {
+  const metal = isMetal(w), full = w.set === 'full', idx = WATCHES.indexOf(w);
+  const strap = metal ? `Браслет, ${MATS[w.mat].toLowerCase()}` : 'Кожаный ремешок';
+  const fig = (view, cls = '') => `<figure class="${cls}"><img src="${watchImg(w, view)}" alt="${w.brand} ${w.model}"></figure>`;
+  const shot = (view, title, text) => `<figure><span class="ph"><img src="${watchImg(w, view)}" alt="" loading="lazy"></span><figcaption>${title}<span>${text}</span></figcaption></figure>`;
+
+  const specs = [
+    ['Год', w.year], ['Референс', w.ref], ['Корпус', sizeOf(w)], ['Калибр', w.cal],
+    ['Механизм', w.mov], ['Запас хода', w.res + ' ч'], ['Материал', MATS[w.mat]], ['Водозащита', w.wr + ' м'],
+    ['Комплект', SETS[w.set]], ['Стекло', 'Сапфировое'], ['Состояние', w.cond], ['Браслет', strap],
+  ];
+  const kit = [
+    ['Часы', 1], ['Оригинальная коробка', full], ['Гарантийная карта производителя', w.set !== 'watch'], ['Инструкция и буклеты', full],
+    ['Бирки', full], [metal ? 'Дополнительные звенья' : 'Оригинальная пряжка', full], ['Отчёт о проверке SMQ TIME', 1], ['Гарантия SMQ TIME, 12 месяцев', 1],
+  ];
+  const revs = [...REVIEWS.filter(r => r.w === w.id), ...REVIEWS.filter(r => r.w !== w.id)].slice(0, 2);
+  const similar = WATCHES.filter(x => x !== w)
+    .sort((a, b) => (b.brand === w.brand) - (a.brand === w.brand) || Math.abs(a.price - w.price) - Math.abs(b.price - w.price)).slice(0, 4);
+  const head = (n, title, extra = '') => `<header><span class="over">${n}</span><h2>${title}</h2>${extra}</header>`;
+
+  return `
+  <div class="pdp">
+    <div class="gal-wrap">
+      <div class="gal" id="gal">${fig('front')}${fig('angle')}${fig('wrist' + w.v, 'cv')}${fig('dial', 'cv')}${fig('back')}</div>
+      <span class="gal-n" id="gal-n">1 / 5</span>
+    </div>
+    <aside class="buy">
+      <span class="brand">${w.brand}</span>
+      <h1>${w.model}</h1>
+      <span class="ref">Ref. ${w.ref}</span>
+      <div class="price">${rub(w.price)}</div>
+      <ul class="checks"><li>В наличии</li><li>Проверены экспертом</li><li>Гарантия 12 месяцев</li><li>Доставка 1–2 дня</li></ul>
+      <button class="btn" id="buy-btn" data-add="${w.id}">Купить</button>
+      <button class="btn ghost" data-fav="${w.id}">${fav.includes(w.id) ? 'В избранном' : 'Добавить в избранное'}</button>
+    </aside>
+  </div>
+
+  <figure class="film"><img src="${watchImg(w, 'film')}" alt="">
+    <figcaption><span class="over">Видео · на запястье</span><b>${sizeOf(w)}<br>на запястье 17 см</b></figcaption></figure>
+
+  <section class="blk">${head('01', 'О модели')}
+    <div class="prose">
+      <p>${w.lead}</p>
+      <p>Внутри — ${w.mov === 'Автоматический' ? 'автоматический калибр' : 'калибр с ручным заводом'} ${w.cal} с запасом хода ${w.res} ${plural(w.res, ['час', 'часа', 'часов'])}. Корпус ${sizeOf(w)} из ${MAT_GEN[w.mat]}, сапфировое стекло, водозащита ${w.wr} метров.</p>
+      <p>Этот экземпляр ${w.year} года ${w.cond === 'Новые' ? 'не носился' : `в состоянии «${w.cond.toLowerCase()}»`}, комплект — ${SETS[w.set].toLowerCase()}. Перед продажей часы прошли полную проверку в нашей мастерской: отчёт с замерами приложим к заказу.</p>
+    </div>
+  </section>
+
+  <section class="blk">${head('02', 'Характеристики')}
+    <dl class="specs">${specs.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>
+  </section>
+
+  <section class="turn"><span class="over">03</span><h2>360° и детали</h2>
+    <div class="stage" id="stage" role="img" aria-label="Вращение часов"></div>
+    <p class="over hint">Потяните, чтобы повернуть</p>
+    <div class="shots">
+      ${shot('dial', 'Циферблат', 'Заводской, без реставрации')}
+      ${shot('back', w.d.open ? 'Механизм' : 'Задняя крышка', w.d.open ? `Калибр ${w.cal} за сапфировым стеклом` : 'Гравировки чёткие, следов вскрытия нет')}
+      ${shot('strap', metal ? 'Браслет' : 'Ремешок', metal ? 'Растяжения нет, звенья на месте' : 'Оригинальный, без заломов')}
+    </div>
+  </section>
+
+  <section class="blk">${head('04', 'Состояние', `<p>${COND_NOTE[w.cond]}</p>`)}
+    <div>
+      <div class="grade">${GRADES.map(g => `<span class="${g === w.cond ? 'on' : ''}">${g}</span>`).join('')}</div>
+      <div class="shots">
+        ${shot('bezel', 'Безель и стекло', 'Сколов и царапин нет')}
+        ${shot('crown', 'Корпус и головка', 'Заводская геометрия граней')}
+        ${shot('angle', 'Боковина', w.cond === 'Новые' ? 'Без следов носки' : 'Лёгкие следы носки')}
+      </div>
+    </div>
+  </section>
+
+  <section class="blk">${head('05', 'Комплект')}
+    <ul class="kit">${kit.map(([k, ok]) => `<li class="${ok ? 'yes' : 'no'}">${k}<span>${ok ? '✓' : '—'}</span></li>`).join('')}</ul>
+  </section>
+
+  <section class="blk">${head('06', 'Проверка подлинности', '<p>Каждые часы проходят четыре этапа в собственной мастерской до того, как попасть на сайт.</p>')}
+    <div>
+      <ul class="steps">
+        <li><h4>Происхождение</h4><p>Сверяем серийный номер и референс с архивами производителя и реестрами краденых часов.</p></li>
+        <li><h4>Корпус и циферблат</h4><p>Под микроскопом проверяем гравировки, шрифты, люминофор и следы полировки.</p></li>
+        <li><h4>Механизм</h4><p>Вскрываем корпус, сверяем калибр и номера, оцениваем оригинальность каждой детали.</p></li>
+        <li><h4>Ход и герметичность</h4><p>Замеряем точность в шести положениях и тестируем водозащиту под давлением.</p></li>
+      </ul>
+      <div class="nums">
+        <div><b>+${1 + idx % 3} с/сутки</b><span>Точность хода</span></div>
+        <div><b>${278 + idx * 3 % 20}°</b><span>Амплитуда баланса</span></div>
+        <div><b>${w.wr} м</b><span>Тест герметичности пройден</span></div>
+        <div><b>${w.res} ч</b><span>Запас хода подтверждён</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="blk">${head('07', 'Отзывы', '<div class="rate" style="margin-top:20px">4.9<small> / 5</small></div><p>★★★★★ · 214 отзывов</p>')}
+    <div>
+      <div class="media">${[3, 1, 2, 4].map((v, i) => `<figure><img src="${watchImg(w, 'wrist' + v)}" alt="" loading="lazy">${i % 2 ? '' : `<i class="badge tr">▶ 0:1${v}</i>`}</figure>`).join('')}</div>
+      <div class="revs">${revs.map(review).join('')}</div>
+    </div>
+  </section>
+
+  <section class="blk">${head('08', 'Доставка, возврат, гарантия')}
+    <ul class="svc">
+      <li><h4>Доставка</h4><p>Бесплатно по России за 1–2 дня. Посылка застрахована на полную стоимость, часы можно осмотреть до оплаты.</p></li>
+      <li><h4>Возврат</h4><p>14 дней без объяснения причин, если часы не носились и пломба на месте. Деньги вернём в день получения.</p></li>
+      <li><h4>Гарантия</h4><p>12 месяцев на механизм от собственной мастерской. Обслуживание после — по цене для своих.</p></li>
+    </ul>
+  </section>
+
+  <section class="sec"><div class="sec-h"><h2>Вам также понравится</h2></div><div class="grid">${cards(similar)}</div></section>
+
+  <div class="buybar" id="buybar"><div><b>${w.brand}</b> ${w.model} · ${rub(w.price)}</div><button class="btn" data-add="${w.id}">Купить</button></div>`;
+}
+
+function initProduct(w) {
+  const stage = $('#stage'), gal = $('#gal'), bar = $('#buybar');
+  let deg = -28, drag = null, raf = 0, last = 0, visible = false;
+  let auto = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const draw = () => { stage.innerHTML = watchSVG(w, 'turn', deg); };
+  const tick = t => {
+    if (!auto || !visible) { raf = 0; last = 0; return; }
+    if (last) deg += (t - last) * .018;
+    last = t;
+    draw();
+    raf = requestAnimationFrame(tick);
+  };
+  const seen = new IntersectionObserver(([e]) => {
+    visible = e.isIntersecting;
+    if (visible && auto && !raf) raf = requestAnimationFrame(tick);
+  }, { threshold: .2 });
+  seen.observe(stage);
+  stage.addEventListener('pointerdown', e => { auto = false; drag = { x: e.clientX, deg }; stage.setPointerCapture(e.pointerId); });
+  stage.addEventListener('pointermove', e => {
+    if (!drag) return;
+    deg = drag.deg + (e.clientX - drag.x) * .6;
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; draw(); });
+  });
+  ['pointerup', 'pointercancel'].forEach(n => stage.addEventListener(n, () => { drag = null; }));
+  draw();
+
+  gal.addEventListener('scroll', () => {
+    $('#gal-n').textContent = `${Math.round(gal.scrollLeft / gal.clientWidth) + 1} / ${gal.children.length}`;
+  }, { passive: true });
+
+  const buySeen = new IntersectionObserver(([e]) => bar.classList.toggle('on', !e.isIntersecting));
+  buySeen.observe($('#buy-btn'));
+
+  return () => { seen.disconnect(); buySeen.disconnect(); cancelAnimationFrame(raf); auto = false; };
+}
+
+/* оформление заказа: один экран, без регистрации */
+let lastOrder = null;
+const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+function Checkout() {
+  if (!cart.length) {
+    return `<div class="done"><span class="over muted">Корзина</span><h1>В корзине пока пусто</h1>
+      <p>Выберите часы — оформление займёт пару минут.</p><a class="btn auto" href="#/catalog">Перейти в каталог</a></div>`;
+  }
+  const fld = (name, label, type, ac, hint, cls = '') => `<div class="fld ${cls}"><input id="f-${name}" name="${name}" type="${type}" placeholder=" " autocomplete="${ac}"><label for="f-${name}">${label}</label><small>${hint}</small></div>`;
+  const radio = (name, value, title, sub, on) => `<label class="radio"><input type="radio" name="${name}" value="${value}"${on ? ' checked' : ''}><span>${title}<small>${sub}</small></span></label>`;
+  const sum = rub(cartSum());
+  return `<form class="co" id="co" novalidate>
+    <div class="co-form">
+      <h1>Оформление</h1>
+      <p class="muted">Без регистрации. Менеджер подтвердит заказ в течение 15 минут.</p>
+
+      <section class="step"><h2><i>1</i>Контакты</h2>
+        <div class="fields">
+          ${fld('name', 'Имя и фамилия', 'text', 'name', 'Укажите имя', 'full')}
+          ${fld('phone', 'Телефон', 'tel', 'tel', 'Укажите номер полностью')}
+          ${fld('email', 'Email для чека (необязательно)', 'email', 'email', 'Проверьте адрес')}
+        </div>
+      </section>
+
+      <section class="step"><h2><i>2</i>Доставка</h2>
+        ${radio('ship', 'courier', 'Курьером по Москве · бесплатно', 'Сегодня или завтра, в удобное окно', 1)}
+        ${radio('ship', 'russia', 'По России · бесплатно', '1–2 дня, застрахованная экспресс-доставка')}
+        ${radio('ship', 'pickup', 'Забрать в бутике', 'Москва, Петровка, 12 · ежедневно 11–21')}
+        <div class="fields" id="addr" style="margin-top:12px">
+          ${fld('city', 'Город', 'text', 'address-level2', 'Укажите город')}
+          ${fld('address', 'Улица, дом, квартира', 'text', 'street-address', 'Укажите адрес')}
+        </div>
+      </section>
+
+      <section class="step"><h2><i>3</i>Оплата</h2>
+        ${radio('pay', 'card', 'Картой онлайн', 'Защищённую ссылку пришлём после подтверждения', 1)}
+        ${radio('pay', 'sbp', 'СБП', 'Перевод по QR-коду без комиссии')}
+        ${radio('pay', 'cash', 'При получении', 'Картой или наличными после осмотра часов')}
+      </section>
+
+      <button class="btn co-buy" type="submit">Купить · ${sum}</button>
+      <p class="note">Нажимая «Купить», вы соглашаетесь с условиями продажи</p>
+    </div>
+
+    <aside class="co-sum"><div class="in">
+      <h2>Ваш заказ</h2>
+      ${cart.map(byId).map(cartItem).join('')}
+      <div class="rows"><div class="row"><span>Товары</span><span>${sum}</span></div><div class="row"><span>Доставка</span><span>Бесплатно</span></div></div>
+      <div class="row total"><span>Итого</span><span>${sum}</span></div>
+      <p class="muted" style="font-size:12px">Гарантия 12 месяцев · возврат 14 дней · проверка экспертом</p>
+    </div></aside>
+  </form>`;
+}
+
+function submitOrder(form) {
+  const val = n => form.elements[n].value.trim();
+  const pickup = form.elements.ship.value === 'pickup';
+  const bad = {
+    name: val('name').length < 2,
+    phone: val('phone').replace(/\D/g, '').length < 10,
+    email: val('email') !== '' && !/^\S+@\S+\.\S+$/.test(val('email')),
+    city: !pickup && !val('city'),
+    address: !pickup && !val('address'),
+  };
+  let first = null;
+  Object.entries(bad).forEach(([n, isBad]) => {
+    form.elements[n].closest('.fld').classList.toggle('err', isBad);
+    if (isBad && !first) first = form.elements[n];
+  });
+  if (first) { first.focus(); return; }
+  lastOrder = { n: 'SMQ-' + String(Date.now()).slice(-6), name: val('name').split(' ')[0] };
+  cart = [];
+  store.set('cart', cart);
+  nav('#/done');
+}
+
+function Done() {
+  return `<div class="done"><span class="over muted">Заказ № ${lastOrder.n}</span>
+    <h1>${esc(lastOrder.name)}, спасибо.<br>Заказ принят</h1>
+    <p>Менеджер свяжется с вами в течение 15 минут и подтвердит доставку. Это демо-версия магазина: заказ никуда не отправлен.</p>
+    <a class="btn auto" href="#/">На главную</a></div>`;
+}
+
+/* роутер и события */
+const app = $('#app');
+const scrollMem = {};
+const hashNow = () => (location.hash.startsWith('#/') ? location.hash : '#/');
+let cleanup = null, current = hashNow();
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+function route(restore) {
+  const [path, qs] = current.slice(1).split('?');
+  const seg = path.split('/').filter(Boolean);
+  const q = Object.fromEntries(new URLSearchParams(qs || ''));
+  if (cleanup) { cleanup(); cleanup = null; }
+  closeAll();
+
+  let page = seg[0] || 'home', html, w;
+  if (page === 'w' && (w = byId(seg[1]))) { page = 'pdp'; html = Product(w); }
+  else if (page === 'catalog') html = Catalog(q);
+  else if (page === 'brands') html = Brands();
+  else if (page === 'wishlist') html = Wishlist();
+  else if (page === 'checkout') html = Checkout();
+  else if (page === 'done' && lastOrder) html = Done();
+  else { page = 'home'; html = Home(); }
+
+  document.body.dataset.page = page;
+  app.innerHTML = html;
+  if (page === 'catalog') renderCatalog();
+  if (page === 'pdp') cleanup = initProduct(w);
+  document.title = (w ? `${w.brand} ${w.model} — ` : '') + 'SMQ TIME';
+
+  const key = page === 'catalog' ? (onlyNew ? '#/catalog?new=1' : '#/catalog') : page === 'home' ? '#/' : current;
+  $$('.nav a, .tabbar a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === key));
+  syncCounts();
+  window.scrollTo(0, restore ? scrollMem[current] || 0 : 0);
+}
+
+// Переходы ведём сами: внутри встроенного просмотра адрес может не меняться
+function nav(href) {
+  if (href === current) { closeAll(); window.scrollTo(0, 0); return; }
+  scrollMem[current] = window.scrollY;
+  current = href;
+  try { history.pushState(null, '', href); } catch (e) { /* без истории тоже работает */ }
+  route();
+}
+
+window.addEventListener('popstate', () => {
+  scrollMem[current] = window.scrollY;
+  current = hashNow();
+  route(true);
+});
+
+document.addEventListener('click', e => {
+  const hit = sel => e.target.closest(sel);
+  let b;
+  if ((b = hit('a[href^="#/"]'))) { e.preventDefault(); nav(b.getAttribute('href')); }
+  else if ((b = hit('[data-fav]'))) toggleFav(b.dataset.fav);
+  else if ((b = hit('[data-add]'))) addToCart(b.dataset.add);
+  else if ((b = hit('[data-rm]'))) removeFromCart(b.dataset.rm);
+  else if ((b = hit('[data-filter]'))) openDrawer('filters', b.dataset.filter);
+  else if ((b = hit('[data-chip]'))) { const [k, v] = b.dataset.chip.split('|'); setFilter(k, v, false); }
+  else if ((b = hit('[data-scroll]'))) { const s = $('#fresh'); s.scrollBy({ left: b.dataset.scroll * s.clientWidth * .75, behavior: 'smooth' }); }
+  else if ((b = hit('[data-act]'))) {
+    const a = b.dataset.act;
+    if (a === 'cart') openDrawer('cart');
+    else if (a === 'search') openSearch();
+    else if (a === 'close') closeAll();
+    else if (a === 'reset') { resetFilters(); renderCatalog(); if (drawerType === 'filters') renderFilters(); }
+  }
+});
+
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.f) setFilter(t.dataset.f, t.value, t.checked);
+  else if (t.id === 'sort') { sortBy = t.value; renderCatalog(); }
+  else if (t.name === 'ship') $('#addr').hidden = t.value === 'pickup';
+});
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'q') renderSearch(e.target.value);
+  const f = e.target.closest('.fld.err');
+  if (f) f.classList.remove('err');
+});
+
+document.addEventListener('submit', e => {
+  if (e.target.id !== 'co') return;
+  e.preventDefault();
+  submitOrder(e.target);
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
+
+// второе фото (на руке) подгружается при первом наведении
+if (matchMedia('(hover: hover)').matches) {
+  document.addEventListener('mouseover', e => {
+    const c = e.target.closest('.card');
+    const img = c && $('.alt:not([src])', c);
+    if (img) { const w = byId(img.dataset.alt); img.src = watchImg(w, 'wrist' + w.v); }
+  });
+}
+
+route();
+</script>
+</body>
+</html>

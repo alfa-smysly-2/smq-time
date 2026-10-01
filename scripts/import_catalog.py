@@ -18,6 +18,7 @@ from pypdf import PdfReader
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "assets" / "watches"
+THUMBS = ASSETS / "thumbs"
 DATA = ROOT / "catalog.json"
 
 
@@ -57,6 +58,9 @@ def extract(pdf_path: Path, brand: str) -> list[dict]:
         image.thumbnail((900, 1100), Image.Resampling.LANCZOS)
         image_name = f"{article.lower()}.webp"
         image.save(ASSETS / image_name, "WEBP", quality=76, method=6)
+        thumb = image.copy()
+        thumb.thumbnail((480, 600), Image.Resampling.LANCZOS)
+        thumb.save(THUMBS / image_name, "WEBP", quality=68, method=4)
         products.append(
             {
                 "id": article.lower(),
@@ -78,6 +82,7 @@ def main() -> None:
     if len(sys.argv) != 3:
         raise SystemExit("Usage: import_catalog.py rolex.pdf audemars-piguet.pdf")
     ASSETS.mkdir(parents=True, exist_ok=True)
+    THUMBS.mkdir(parents=True, exist_ok=True)
     products = extract(Path(sys.argv[1]), "Rolex") + extract(Path(sys.argv[2]), "Audemars Piguet")
     ids = [product["id"] for product in products]
     if len(ids) != 93 or len(ids) != len(set(ids)):

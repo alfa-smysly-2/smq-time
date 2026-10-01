@@ -24,6 +24,7 @@ const unique = values => [...new Set(values)].sort((a, b) => String(a).localeCom
 const numberOf = number => new Intl.NumberFormat('ru-RU').format(number);
 const variantWord = number => number % 10 === 1 && number % 100 !== 11 ? 'вариант' : [2, 3, 4].includes(number % 10) && ![12, 13, 14].includes(number % 100) ? 'варианта' : 'вариантов';
 const modelWord = number => number % 10 === 1 && number % 100 !== 11 ? 'сохранённая модель' : [2, 3, 4].includes(number % 10) && ![12, 13, 14].includes(number % 100) ? 'сохранённые модели' : 'сохранённых моделей';
+const thumbPath = image => image.replace('assets/watches/', 'assets/watches/thumbs/');
 
 function favoriteButton(watch) {
   const active = favorites.has(watch.id);
@@ -35,7 +36,7 @@ function favoriteButton(watch) {
 function card(watch) {
   return `<article class="product-card">
     <div class="product-image">
-      <a href="#/w/${watch.id}" aria-label="${escapeHTML(watch.brand)} ${escapeHTML(watch.model)}, артикул ${watch.article}"><img src="${watch.image}" alt="${escapeHTML(watch.brand)} ${escapeHTML(watch.model)}, артикул ${watch.article}" loading="lazy"></a>
+      <a href="#/w/${watch.id}" aria-label="${escapeHTML(watch.brand)} ${escapeHTML(watch.model)}, артикул ${watch.article}"><img src="${thumbPath(watch.image)}" data-full-src="${watch.image}" alt="${escapeHTML(watch.brand)} ${escapeHTML(watch.model)}, артикул ${watch.article}" loading="lazy"></a>
       ${favoriteButton(watch)}
     </div>
     <span class="product-brand">${escapeHTML(watch.brand)}</span>

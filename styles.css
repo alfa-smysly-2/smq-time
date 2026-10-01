@@ -45,3 +45,16 @@ body{background:var(--paper);color:var(--ink)}
 .footer-grid a:not(.logo){color:#b2bac5}.footer-grid a:not(.logo):hover{color:var(--gold)}
 .source-note,.copyright{color:#9ca6b3}
 @media(max-width:700px){.mobile-nav{background:rgba(10,17,28,.98);border-color:var(--line)}.mobile-nav a{color:#9ea8b5}.mobile-nav a.active{color:var(--gold)}}
+
+/* Larger product presentation after transparent PDF margins are cropped. */
+.hero-image img{height:min(92vh,780px);padding:10px}
+.product-image img{padding:1.5%}
+.product-image:hover img{transform:scale(1.025)}
+.story-image img{padding:8px}
+.product-visual img{padding:6px}
+@media(max-width:700px){
+  .hero-image{height:60vh;min-height:390px}
+  .hero-image img{padding:4px}
+  .product-image img{padding:0}
+  .product-visual img{padding:2px}
+}

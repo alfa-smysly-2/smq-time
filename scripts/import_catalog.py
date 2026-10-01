@@ -40,9 +40,23 @@ def extract(pdf_path: Path, brand: str) -> list[dict]:
         if len(images) != 1:
             raise ValueError(f"Expected one watch image on {pdf_path.name} page {page_number}, got {len(images)}")
         image = Image.open(io.BytesIO(images[0].data)).convert("RGBA")
-        image.thumbnail((1100, 1350), Image.Resampling.LANCZOS)
+        # Remove the generous transparent margins carried over from the PDF.
+        # This reduces transferred pixels and lets the watch fill its card.
+        bounds = image.getchannel("A").getbbox()
+        if bounds:
+            left, top, right, bottom = bounds
+            pad = max(8, round(max(right - left, bottom - top) * 0.018))
+            image = image.crop(
+                (
+                    max(0, left - pad),
+                    max(0, top - pad),
+                    min(image.width, right + pad),
+                    min(image.height, bottom + pad),
+                )
+            )
+        image.thumbnail((900, 1100), Image.Resampling.LANCZOS)
         image_name = f"{article.lower()}.webp"
-        image.save(ASSETS / image_name, "WEBP", quality=84, method=6)
+        image.save(ASSETS / image_name, "WEBP", quality=76, method=6)
         products.append(
             {
                 "id": article.lower(),
